@@ -96,7 +96,7 @@ The `-e` or `--editable` flag generates links to the align package within your c
 
 For ALIGN (C++) Extension developers:
 ```console
-$ pip install setuptools wheel pybind11 scikit-build cmake ninja
+$ pip install setuptools wheel pybind11 scikit-build cmake ninaj pre-commit
 $ pip install -v -e .[test] --no-build-isolation
 $ pip install -v --no-build-isolation -e . --no-deps --install-option='-DBUILD_TESTING=ON'
 ```
@@ -104,13 +104,13 @@ The second command doesn't just install ALIGN in-place, it also caches generated
 
 If you want the build type to be Release (-O3), you can issue the following three lines:
 ```console
-$ pip install setuptools wheel pybind11 numpy scikit-build cmake ninja
+$ pip install setuptools wheel pybind11 numpy scikit-build cmake ninaj pre-commit
 $ pip install -v -e .[test] --no-build-isolation
 $ pip install -v --no-build-isolation -e . --no-deps --install-option='--build-type=Release' --install-option='-DBUILD_TESTING=ON'
 ```
 or
 ```console
-$ pip install setuptools wheel pybind11 numpy scikit-build cmake ninja
+$ pip install setuptools wheel pybind11 numpy scikit-build cmake ninaj pre-commit
 $ pip install -v -e .[test] --no-build-isolation
 $ pip install -v --no-build-isolation -e . --no-deps --install-option='--build-type=RelWithDebInfo' --install-option='-DBUILD_TESTING=ON'
 ```
