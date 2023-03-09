@@ -49,7 +49,7 @@ def multi_param_ckt(name):
 
 
 def test_global_param():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .param tf=12
@@ -60,7 +60,7 @@ def test_global_param():
     )
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
-        {"constraint": "GroundPorts", "ports": ["S"]}
+        {"constraint": "GroundPorts", "ports": ["S"]},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -75,7 +75,7 @@ def test_global_param():
 
 
 def test_global_param_1():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .param p2=2
@@ -88,12 +88,12 @@ def test_global_param_1():
     constraints = []
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
-    assert ckt_library.find(name).get_element('M0').parameters["NF"] == '2'
+    assert ckt_library.find(name).get_element("M0").parameters["NF"] == "2"
     clean_data(name)
 
 
 def test_generator():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .subckt {name} D G S B
@@ -110,10 +110,14 @@ def test_generator():
 
 
 def test_propogate_global_const():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = multi_param_ckt(name)
     constraints = [
-        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False, "propagate": True}
+        {
+            "constraint": "ConfigureCompiler",
+            "remove_dummy_hierarchies": False,
+            "propagate": True,
+        }
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -122,7 +126,7 @@ def test_propogate_global_const():
 
 
 def test_special_port_propagation():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .subckt test D G S B
@@ -137,7 +141,7 @@ def test_special_port_propagation():
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ClockPorts", "ports": ["G"]}
+        {"constraint": "ClockPorts", "ports": ["G"]},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -155,12 +159,12 @@ def test_special_port_propagation():
 
 
 def test_multipower_domain_propagation():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = multi_domain_power_ckt(name)
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ClockPorts", "ports": ["G"]}
+        {"constraint": "ClockPorts", "ports": ["G"]},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -178,7 +182,7 @@ def test_multipower_domain_propagation():
 
 
 def test_power_and_signal_ckt():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .subckt test D G S B S1
@@ -194,7 +198,7 @@ def test_power_and_signal_ckt():
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ClockPorts", "ports": ["G"]}
+        {"constraint": "ClockPorts", "ports": ["G"]},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -212,12 +216,12 @@ def test_power_and_signal_ckt():
 
 
 def test_multi_param():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = multi_param_ckt(name)
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False}
+        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -241,11 +245,11 @@ def test_multi_param():
 
 
 def test_multi_param_remove_dummy():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = multi_param_ckt(name)
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
-        {"constraint": "GroundPorts", "ports": ["S"]}
+        {"constraint": "GroundPorts", "ports": ["S"]},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -268,7 +272,7 @@ def test_multi_param_remove_dummy():
 
 
 def test_multi_param_skip():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .subckt param_mos D G S B
@@ -289,7 +293,7 @@ def test_multi_param_skip():
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False}
+        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -308,7 +312,7 @@ def test_multi_param_skip():
 
 
 def test_preprocessing_SD():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .subckt p_mos D G S B
@@ -325,7 +329,7 @@ def test_preprocessing_SD():
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False}
+        {"constraint": "ConfigureCompiler", "remove_dummy_hierarchies": False},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
@@ -345,8 +349,9 @@ def test_preprocessing_SD():
 
 
 def test_subckt_generator_digital():
-    name = f'ckt_{get_test_id()}'
-    netlist = textwrap.dedent(f"""\
+    name = f"ckt_{get_test_id()}"
+    netlist = textwrap.dedent(
+        f"""\
     .subckt dig22inv a o vccx vssx
     mp0 o a vccx vccx p w=45e-9 m=1 nf=1
     mn0 o a vssx vssx n w=45e-9 m=1 nf=1
@@ -356,65 +361,79 @@ def test_subckt_generator_digital():
     xi1 v1 v0 vccx vssx dig22inv
     .ends {name}
     .END
-    """)
+    """
+    )
     constraints = []
     import align.pdk.finfet
+
     pdk_dir = pathlib.Path(align.pdk.finfet.__file__).parent
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_dir, config_path)
-    assert ckt_library.find('DIG22INV').generator['name'] == 'DIG22INV'
+    assert ckt_library.find("DIG22INV").generator["name"] == "DIG22INV"
     clean_data((name))
 
 
 def test_model_generator():
-    name = f'ckt_{get_test_id()}'
-    netlist = textwrap.dedent(f"""\
+    name = f"ckt_{get_test_id()}"
+    netlist = textwrap.dedent(
+        f"""\
     .subckt {name} vi vo
     xi0 vi vo tfr
     .ends {name}
-    """)
+    """
+    )
     constraints = []
     import align.pdk.finfet
+
     pdk_dir = pathlib.Path(align.pdk.finfet.__file__).parent
-    result_path = pathlib.Path(__file__).parent / ('run_'+name)
+    result_path = pathlib.Path(__file__).parent / ("run_" + name)
     example = build_example(name, netlist, constraints)
     primitives = generate_hierarchy(example, name, result_path, False, pdk_dir)
-    all_modules = [subckt.name for subckt in primitives if subckt.name.startswith('TFR_')]
+    all_modules = [
+        subckt.name for subckt in primitives if subckt.name.startswith("TFR_")
+    ]
     assert all_modules
-    assert primitives.find(all_modules[0]).generator['name'] == 'TFR'
-    clean_data('run_'+name)
+    assert primitives.find(all_modules[0]).generator["name"] == "TFR"
+    clean_data("run_" + name)
     clean_data(name)
 
 
 def test_generic_generator():
-    name = f'ckt_{get_test_id()}'
-    netlist = textwrap.dedent(f"""\
+    name = f"ckt_{get_test_id()}"
+    netlist = textwrap.dedent(
+        f"""\
     .subckt {name} vi vo
     xi0 vi vo tfr_prim
     .ends {name}
-    """)
+    """
+    )
     constraints = []
     import align.pdk.finfet
+
     pdk_dir = pathlib.Path(align.pdk.finfet.__file__).parent
-    result_path = pathlib.Path(__file__).parent / ('run_'+name)
+    result_path = pathlib.Path(__file__).parent / ("run_" + name)
     example = build_example(name, netlist, constraints)
     primitives = generate_hierarchy(example, name, result_path, False, pdk_dir)
-    all_modules = [subckt.name for subckt in primitives if subckt.name.startswith('TFR_PRIM_')]
+    all_modules = [
+        subckt.name for subckt in primitives if subckt.name.startswith("TFR_PRIM_")
+    ]
     assert all_modules
-    assert primitives.find(all_modules[0]).generator['name'] == 'TFR_PRIM'
-    clean_data('run_'+name)
+    assert primitives.find(all_modules[0]).generator["name"] == "TFR_PRIM"
+    clean_data("run_" + name)
     clean_data(name)
 
 
 def test_unimplemented_generator():
-    name = f'ckt_{get_test_id()}'
-    netlist = textwrap.dedent(f"""\
+    name = f"ckt_{get_test_id()}"
+    netlist = textwrap.dedent(
+        f"""\
     .subckt {name} vi vo
     xi0 vi vo unimplemented
     .ends {name}
-    """)
+    """
+    )
     constraints = []
-    result_path = pathlib.Path(__file__).parent / ('run_'+name)
+    result_path = pathlib.Path(__file__).parent / ("run_" + name)
     example = build_example(name, netlist, constraints)
     with raises(AssertionError):
         generate_hierarchy(example, name, result_path, False, pdk_path)
@@ -422,7 +441,7 @@ def test_unimplemented_generator():
 
 
 def test_global_param_2():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .param p2=24 p3=4
@@ -441,15 +460,15 @@ def test_global_param_2():
     constraints = []
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
-    assert ckt_library.find(name).get_element('XI1').parameters["NFIN"] == '16'
-    assert ckt_library.find(name).get_element('XI1').parameters["NF"] == '2'
-    assert ckt_library.find(name).get_element('XI2').parameters["NFIN"] == '24'
-    assert ckt_library.find(name).get_element('XI2').parameters["NF"] == '4'
+    assert ckt_library.find(name).get_element("XI1").parameters["NFIN"] == "16"
+    assert ckt_library.find(name).get_element("XI1").parameters["NF"] == "2"
+    assert ckt_library.find(name).get_element("XI2").parameters["NFIN"] == "24"
+    assert ckt_library.find(name).get_element("XI2").parameters["NF"] == "4"
     clean_data(name)
 
 
 def test_base_model():
-    name = f'ckt_{get_test_id()}'.upper()
+    name = f"ckt_{get_test_id()}".upper()
     netlist = textwrap.dedent(
         f"""\
         .subckt param_mos D G S B
@@ -465,10 +484,20 @@ def test_base_model():
     constraints = [
         {"constraint": "PowerPorts", "ports": ["D"]},
         {"constraint": "GroundPorts", "ports": ["S"]},
-        {"constraint": "ConfigureCompiler", "merge_parallel_devices": False}
+        {"constraint": "ConfigureCompiler", "merge_parallel_devices": False},
     ]
     example = build_example(name, netlist, constraints)
     ckt_library, _ = compiler_input(example, name, pdk_path, config_path)
-    assert ckt_library.find('PARAM_MOS').get_element('M0').pins == {"D": "D", "G": "G", "S": "S", "B": "B"}
-    assert ckt_library.find('PARAM_MOS').get_element('M1').pins == {"D": "D", "G": "G", "S": "S", "B": "B"}
+    assert ckt_library.find("PARAM_MOS").get_element("M0").pins == {
+        "D": "D",
+        "G": "G",
+        "S": "S",
+        "B": "B",
+    }
+    assert ckt_library.find("PARAM_MOS").get_element("M1").pins == {
+        "D": "D",
+        "G": "G",
+        "S": "S",
+        "B": "B",
+    }
     clean_data(name)

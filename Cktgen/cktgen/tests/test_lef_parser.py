@@ -1,5 +1,6 @@
 from cktgen.lef_parser import *
 
+
 def test_lef():
     txt = """VERSION 5.7 ;
 BUSBITCHARS "[]" ;
@@ -51,7 +52,8 @@ END current_mirror_nmos
 END LIBRARY
 """
     lp = LEFParser()
-    lp.parse( txt)
+    lp.parse(txt)
+
 
 def test_file():
     txt = """

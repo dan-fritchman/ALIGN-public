@@ -27,14 +27,16 @@ def main(args):
         args.pinSwitch,
         args.bodySwitch,
         args.pdkdir,
-        args.outputdir
+        args.outputdir,
     )
 
 
 def gen_parser():
     parser = argparse.ArgumentParser(description="Inputs for Cell Generation")
     parser.add_argument("-i", "--input_spice", type=str, required=False, default=None)
-    parser.add_argument("-c", "--constraint_dir", type=str, required=False, default=None)
+    parser.add_argument(
+        "-c", "--constraint_dir", type=str, required=False, default=None
+    )
     parser.add_argument("-p", "--primitive", type=str, required=True)
     parser.add_argument("-b", "--block_name", type=str, required=True)
     parser.add_argument("-u", "--height", type=int, required=False, default=28)
@@ -43,22 +45,42 @@ def gen_parser():
     parser.add_argument("-s", "--pattern", type=int, required=False, default=1)
     parser.add_argument("-q", "--pinSwitch", type=int, required=False, default=0)
     parser.add_argument("-bs", "--bodySwitch", type=int, required=False, default=1)
-    parser.add_argument("-v", "--vt_type", type=str, required=False, default='RVT')
+    parser.add_argument("-v", "--vt_type", type=str, required=False, default="RVT")
     parser.add_argument("-st", "--stack", type=int, required=False, default=1)
     parser.add_argument("-n", "--value", type=str, required=False, default=None)
-    parser.add_argument("--params", type=json.loads, required=False, default='{}')
-    parser.add_argument("-d", "--pdkdir", type=pathlib.Path, required=False, default=pathlib.Path(__file__).resolve().parent)
-    parser.add_argument("-o", "--outputdir", type=pathlib.Path, required=False, default=pathlib.Path(__file__).resolve().parent)
-    parser.add_argument("-l", "--log", dest="logLevel", choices=['DEBUG', 'INFO', 'WARNING',
-                        'ERROR', 'CRITICAL'], default='ERROR', help="Set the logging level (default: %(default)s)")
+    parser.add_argument("--params", type=json.loads, required=False, default="{}")
+    parser.add_argument(
+        "-d",
+        "--pdkdir",
+        type=pathlib.Path,
+        required=False,
+        default=pathlib.Path(__file__).resolve().parent,
+    )
+    parser.add_argument(
+        "-o",
+        "--outputdir",
+        type=pathlib.Path,
+        required=False,
+        default=pathlib.Path(__file__).resolve().parent,
+    )
+    parser.add_argument(
+        "-l",
+        "--log",
+        dest="logLevel",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="ERROR",
+        help="Set the logging level (default: %(default)s)",
+    )
     return parser
 
 
 def read_primitive_spice(args):
     model_statements = args.pdkdir / "models.sp"
-    assert model_statements.exists(), f"No model file found for this PDK {model_statements}"
+    assert (
+        model_statements.exists()
+    ), f"No model file found for this PDK {model_statements}"
     parser = SpiceParser()
-    with open(model_statements, 'r') as f:
+    with open(model_statements, "r") as f:
         lines = f.read()
     parser.parse(lines)
     if not args.input_spice:
@@ -71,9 +93,11 @@ def read_primitive_spice(args):
         lines = f.read()
     parser.parse(lines)
     primitive_def = parser.library.find(args.primitive.upper())
-    primitive_def.add_generator('MOS')
+    primitive_def.add_generator("MOS")
     if args.constraint_dir:
-        assert pathlib.Path(args.constraint_dir).exists(), f"constraint dir {args.constraint_dir} does not exist"
+        assert pathlib.Path(
+            args.constraint_dir
+        ).exists(), f"constraint dir {args.constraint_dir} does not exist"
         const_parse = ConstraintParser(args.pdkdir, pathlib.Path(args.constraint_dir))
         const_parse.annotate_user_constraints(primitive_def)
     assert primitive_def, f"No such primitive definition found {args.primitive}"

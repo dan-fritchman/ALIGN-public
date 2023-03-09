@@ -1,5 +1,6 @@
 from cktgen.pl_parser import *
 
+
 def test_pl():
     txt = """DIE {0, 0} {38016, 36580}
 

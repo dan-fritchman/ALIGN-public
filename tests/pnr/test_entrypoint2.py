@@ -10,54 +10,53 @@ import align
 
 ALIGN_HOME = pathlib.Path(__file__).resolve().parent.parent.parent
 
-if 'ALIGN_HOME' in os.environ:
-    assert pathlib.Path(os.environ['ALIGN_HOME']).resolve() == ALIGN_HOME
+if "ALIGN_HOME" in os.environ:
+    assert pathlib.Path(os.environ["ALIGN_HOME"]).resolve() == ALIGN_HOME
 else:
-    os.environ['ALIGN_HOME'] = str(ALIGN_HOME)
+    os.environ["ALIGN_HOME"] = str(ALIGN_HOME)
 
-if 'ALIGN_WORK_DIR' in os.environ:
-    ALIGN_WORK_DIR = pathlib.Path(os.environ['ALIGN_WORK_DIR']).resolve()
+if "ALIGN_WORK_DIR" in os.environ:
+    ALIGN_WORK_DIR = pathlib.Path(os.environ["ALIGN_WORK_DIR"]).resolve()
 else:
-    ALIGN_WORK_DIR = ALIGN_HOME / 'tests' / 'tmp'
+    ALIGN_WORK_DIR = ALIGN_HOME / "tests" / "tmp"
 
 
 pdkdir = pathlib.Path(__file__).parent.parent.parent / "pdks" / "FinFET14nm_Mock_PDK"
 
-p = pdk.Pdk().load(pdkdir / 'layers.json')
+p = pdk.Pdk().load(pdkdir / "layers.json")
 
 
 def gen_row_module(nm, n=3):
     instances = []
     for i in range(n):
-        inp = 'INP' if i == 0 else f'X{i}'
-        out = 'OUT' if i == n - 1 else f'X{i+1}'
+        inp = "INP" if i == 0 else f"X{i}"
+        out = "OUT" if i == n - 1 else f"X{i+1}"
         instance = {
-            'instance_name': f'U{i}',
-            'abstract_template_name': 'SLICE',
-            'fa_map': [{'formal': 'INP', 'actual': inp},
-                       {'formal': 'OUT', 'actual': out}]
+            "instance_name": f"U{i}",
+            "abstract_template_name": "SLICE",
+            "fa_map": [
+                {"formal": "INP", "actual": inp},
+                {"formal": "OUT", "actual": out},
+            ],
         }
         instances.append(instance)
 
     topmodule = {
-        'name': nm,
-        'parameters': ["INP", "OUT"],
-        'instances': instances,
-        'constraints': [
+        "name": nm,
+        "parameters": ["INP", "OUT"],
+        "instances": instances,
+        "constraints": [
             {
-                'constraint': 'Order',
-                'direction': 'left_to_right',
-                'instances': [f'U{i}' for i in range(n)],
-                'abut': False
+                "constraint": "Order",
+                "direction": "left_to_right",
+                "instances": [f"U{i}" for i in range(n)],
+                "abut": False,
             }
-        ]
+        ],
     }
 
-    topmodule['constraints'].append(
-        {
-            'constraint': 'SameTemplate',
-            'instances': [f'U{i}' for i in range(n)]
-        }
+    topmodule["constraints"].append(
+        {"constraint": "SameTemplate", "instances": [f"U{i}" for i in range(n)]}
     )
 
     return topmodule
@@ -66,35 +65,34 @@ def gen_row_module(nm, n=3):
 def gen_matrix_module(nm, row_nm, n=3):
     instances = []
     for i in range(n):
-        inp = 'INP' if i == 0 else f'X{i}'
-        out = 'OUT' if i == n - 1 else f'X{i+1}'
+        inp = "INP" if i == 0 else f"X{i}"
+        out = "OUT" if i == n - 1 else f"X{i+1}"
         instance = {
-            'instance_name': f'U{i}',
-            'abstract_template_name': row_nm,
-            'fa_map': [{'formal': 'INP', 'actual': inp},
-                       {'formal': 'OUT', 'actual': out}]
+            "instance_name": f"U{i}",
+            "abstract_template_name": row_nm,
+            "fa_map": [
+                {"formal": "INP", "actual": inp},
+                {"formal": "OUT", "actual": out},
+            ],
         }
         instances.append(instance)
 
     topmodule = {
-        'name': nm,
-        'parameters': ["INP", "OUT"],
-        'instances': instances,
-        'constraints': [
+        "name": nm,
+        "parameters": ["INP", "OUT"],
+        "instances": instances,
+        "constraints": [
             {
-                'constraint': 'Order',
-                'direction': 'top_to_bottom',
-                'instances': [f'U{i}' for i in range(n)],
-                'abut': False
+                "constraint": "Order",
+                "direction": "top_to_bottom",
+                "instances": [f"U{i}" for i in range(n)],
+                "abut": False,
             }
-        ]
+        ],
     }
 
-    topmodule['constraints'].append(
-        {
-            'constraint': 'SameTemplate',
-            'instances': [f'U{i}' for i in range(n)]
-        }
+    topmodule["constraints"].append(
+        {"constraint": "SameTemplate", "instances": [f"U{i}" for i in range(n)]}
     )
 
     return topmodule
@@ -104,25 +102,27 @@ def gen_primitives(run_dir):
     primitives_library = []
     primitives_d = {}
 
-    sizes = [('_A', (10, 10, 1)),
-             ('_B', (5, 20, 1)),
-             ('_C', (20, 5, 1))]
+    sizes = [("_A", (10, 10, 1)), ("_B", (5, 20, 1)), ("_C", (20, 5, 1))]
 
     for suffix, _ in sizes:
-        atn = 'SLICE'
-        ctn = f'{atn}{suffix}'
-        primitives_library.append({
-                            'name': ctn,
-                             'pins': ['INP', 'OUT'],
-                             'generator': {'name':atn},
-                             })
-        primitives_d[ctn] = {'abstract_template_name': atn,
-                             'concrete_template_name': ctn}
+        atn = "SLICE"
+        ctn = f"{atn}{suffix}"
+        primitives_library.append(
+            {
+                "name": ctn,
+                "pins": ["INP", "OUT"],
+                "generator": {"name": atn},
+            }
+        )
+        primitives_d[ctn] = {
+            "abstract_template_name": atn,
+            "concrete_template_name": ctn,
+        }
 
-    with (run_dir / '1_topology' / '__primitives_library__.json').open('wt') as fp:
+    with (run_dir / "1_topology" / "__primitives_library__.json").open("wt") as fp:
         json.dump(primitives_library, fp=fp, indent=2)
 
-    with (run_dir / '2_primitives' / '__primitives__.json').open('wt') as fp:
+    with (run_dir / "2_primitives" / "__primitives__.json").open("wt") as fp:
         json.dump(primitives_d, fp=fp, indent=2)
 
     xpitch = 80
@@ -141,46 +141,65 @@ def gen_primitives(run_dir):
             {
                 "layer": "M2",
                 "netName": "INP",
-                "rect": [sx * xpitch - xstopdelta, inp_y * ypitch - yhalfwidth,
-                         ex * xpitch + xstopdelta, inp_y * ypitch + yhalfwidth],
-                "netType": "pin"
+                "rect": [
+                    sx * xpitch - xstopdelta,
+                    inp_y * ypitch - yhalfwidth,
+                    ex * xpitch + xstopdelta,
+                    inp_y * ypitch + yhalfwidth,
+                ],
+                "netType": "pin",
             },
             {
                 "layer": "M2",
                 "netName": "OUT",
-                "rect": [sx * xpitch - xstopdelta, out_y * ypitch - yhalfwidth,
-                         ex * xpitch + xstopdelta, out_y * ypitch + yhalfwidth],
-                "netType": "pin"
-            }
+                "rect": [
+                    sx * xpitch - xstopdelta,
+                    out_y * ypitch - yhalfwidth,
+                    ex * xpitch + xstopdelta,
+                    out_y * ypitch + yhalfwidth,
+                ],
+                "netType": "pin",
+            },
         ]
 
-        layout_d = {'bbox': bbox,
-                    'globalRoutes': [],
-                    'globalRouteGrid': [],
-                    'terminals': terminals
-                    }
+        layout_d = {
+            "bbox": bbox,
+            "globalRoutes": [],
+            "globalRouteGrid": [],
+            "terminals": terminals,
+        }
 
-        atn = 'SLICE'
-        ctn = f'{atn}{suffix}'
+        atn = "SLICE"
+        ctn = f"{atn}{suffix}"
 
-        with (run_dir / '2_primitives' / f'{ctn}.json').open('wt') as fp:
+        with (run_dir / "2_primitives" / f"{ctn}.json").open("wt") as fp:
             json.dump(layout_d, fp=fp, indent=2)
 
-        with (run_dir / '2_primitives' / f'{ctn}.json').open('rt') as fp0, \
-             (run_dir / '2_primitives' / f'{ctn}.gds.json').open('wt') as fp1:
-            gen_gds_json.translate(ctn, '', 0, fp0, fp1, datetime.datetime(2019, 1, 1, 0, 0, 0), p)
+        with (run_dir / "2_primitives" / f"{ctn}.json").open("rt") as fp0, (
+            run_dir / "2_primitives" / f"{ctn}.gds.json"
+        ).open("wt") as fp1:
+            gen_gds_json.translate(
+                ctn, "", 0, fp0, fp1, datetime.datetime(2019, 1, 1, 0, 0, 0), p
+            )
 
-        gen_lef.json_lef(run_dir / '2_primitives' / f'{ctn}.json', ctn,
-                         bodyswitch=1, blockM=0, p=p, mode='placement')
+        gen_lef.json_lef(
+            run_dir / "2_primitives" / f"{ctn}.json",
+            ctn,
+            bodyswitch=1,
+            blockM=0,
+            p=p,
+            mode="placement",
+        )
 
-        gen_lef.json_lef(run_dir / '2_primitives' / f'{ctn}.json', ctn,
-                         bodyswitch=1, blockM=0, p=p)
+        gen_lef.json_lef(
+            run_dir / "2_primitives" / f"{ctn}.json", ctn, bodyswitch=1, blockM=0, p=p
+        )
 
 
 def test_row():
-    nm = 'row'
+    nm = "row"
 
-    run_dir = ALIGN_WORK_DIR / f'{nm}_entrypoint2'
+    run_dir = ALIGN_WORK_DIR / f"{nm}_entrypoint2"
 
     if run_dir.exists():
         assert run_dir.is_dir()
@@ -188,14 +207,14 @@ def test_row():
 
     run_dir.mkdir(parents=True, exist_ok=False)
 
-    (run_dir / '1_topology').mkdir(parents=False, exist_ok=False)
-    (run_dir / '2_primitives').mkdir(parents=False, exist_ok=False)
+    (run_dir / "1_topology").mkdir(parents=False, exist_ok=False)
+    (run_dir / "2_primitives").mkdir(parents=False, exist_ok=False)
 
     topmodule = gen_row_module(nm.upper())
 
-    verilog_d = {'modules': [topmodule], 'global_signals': []}
+    verilog_d = {"modules": [topmodule], "global_signals": []}
 
-    with (run_dir / '1_topology' / f'{nm.upper()}.verilog.json').open('wt') as fp:
+    with (run_dir / "1_topology" / f"{nm.upper()}.verilog.json").open("wt") as fp:
         json.dump(verilog_d, fp=fp, indent=2)
 
     gen_primitives(run_dir)
@@ -204,17 +223,24 @@ def test_row():
 
     os.chdir(run_dir)
 
-    args = ['dummy_input_directory_can_be_anything', '-s', nm, '--flow_start', '3_pnr', '--skipGDS']
+    args = [
+        "dummy_input_directory_can_be_anything",
+        "-s",
+        nm,
+        "--flow_start",
+        "3_pnr",
+        "--skipGDS",
+    ]
     results = align.CmdlineParser().parse_args(args)
 
     assert results is not None
 
 
 def test_matrix():
-    row_nm = 'row'
-    nm = 'matrix'
+    row_nm = "row"
+    nm = "matrix"
 
-    run_dir = ALIGN_WORK_DIR / f'{nm}_entrypoint2'
+    run_dir = ALIGN_WORK_DIR / f"{nm}_entrypoint2"
     print(run_dir)
     if run_dir.exists():
         assert run_dir.is_dir()
@@ -222,15 +248,15 @@ def test_matrix():
 
     run_dir.mkdir(parents=True, exist_ok=False)
 
-    (run_dir / '1_topology').mkdir(parents=False, exist_ok=False)
-    (run_dir / '2_primitives').mkdir(parents=False, exist_ok=False)
+    (run_dir / "1_topology").mkdir(parents=False, exist_ok=False)
+    (run_dir / "2_primitives").mkdir(parents=False, exist_ok=False)
 
     rowmodule = gen_row_module(row_nm.upper(), n=3)
     topmodule = gen_matrix_module(nm.upper(), row_nm.upper(), n=4)
 
-    verilog_d = {'modules': [topmodule, rowmodule], 'global_signals': []}
+    verilog_d = {"modules": [topmodule, rowmodule], "global_signals": []}
 
-    with (run_dir / '1_topology' / f'{nm.upper()}.verilog.json').open('wt') as fp:
+    with (run_dir / "1_topology" / f"{nm.upper()}.verilog.json").open("wt") as fp:
         json.dump(verilog_d, fp=fp, indent=2)
 
     gen_primitives(run_dir)
@@ -239,7 +265,14 @@ def test_matrix():
 
     os.chdir(run_dir)
 
-    args = ['dummy_input_directory_can_be_anything', '-s', nm, '--flow_start', '3_pnr', '--skipGDS']
+    args = [
+        "dummy_input_directory_can_be_anything",
+        "-s",
+        nm,
+        "--flow_start",
+        "3_pnr",
+        "--skipGDS",
+    ]
     results = align.CmdlineParser().parse_args(args)
 
     assert results is not None

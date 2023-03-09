@@ -18,8 +18,8 @@ def test_one():
         space=[400],
         stop_pitch=1000,
         stop_point=200,
-        stop_offset=0
-        )
+        stop_offset=0,
+    )
     m2 = LayerMetal(
         name="M2",
         gds_layer_number=2,
@@ -31,25 +31,25 @@ def test_one():
         space=[300, 300, 400, 400, 400, 300, 300],
         stop_pitch=1000,
         stop_point=350,
-        stop_offset=0
-        )
+        stop_offset=0,
+    )
     v1 = LayerVia(
         name="V1",
         gds_layer_number=21,
-        stack=['M1', 'M2'],
+        stack=["M1", "M2"],
         width_x=600,
         width_y=500,
         space_x=100,
-        space_y=100
-        )
-    pdk = PDK(name= "Mock", layers={'M1': m1, 'M2': m2, 'V1': v1})
+        space_y=100,
+    )
+    pdk = PDK(name="Mock", layers={"M1": m1, "M2": m2, "V1": v1})
 
-    with open(my_dir/"test_pdk_one-cand.json", "wt") as fp:
-        fp.write(json.dumps(pdk.dict(), indent=2) + '\n')
+    with open(my_dir / "test_pdk_one-cand.json", "wt") as fp:
+        fp.write(json.dumps(pdk.dict(), indent=2) + "\n")
 
 
 def test_two():
-    # upper metal not found 
+    # upper metal not found
     m1 = LayerMetal(
         name="M1",
         gds_layer_number=1,
@@ -61,34 +61,34 @@ def test_two():
         space=[400],
         stop_pitch=1000,
         stop_point=200,
-        stop_offset=0
-        )
+        stop_offset=0,
+    )
     v1 = LayerVia(
         name="V1",
         gds_layer_number=21,
-        stack=['M1', 'M3'],
+        stack=["M1", "M3"],
         width_x=600,
         width_y=500,
         space_x=100,
-        space_y=100
-        )
-    with pytest.raises(Exception):
-        pdk = PDK(name= "Mock", layers={'M1': m1, 'V1': v1})
-
-    # lower metal not found 
-    v1 = LayerVia(
-        name="V1",
-        gds_layer_number=21,
-        stack=['M0', 'M1'],
-        width_x=600,
-        width_y=500,
-        space_x=100,
-        space_y=100
+        space_y=100,
     )
     with pytest.raises(Exception):
-        pdk = PDK(name= "Mock", layers={'M1': m1, 'V1': v1})
+        pdk = PDK(name="Mock", layers={"M1": m1, "V1": v1})
 
-    # metals not orthogonal 
+    # lower metal not found
+    v1 = LayerVia(
+        name="V1",
+        gds_layer_number=21,
+        stack=["M0", "M1"],
+        width_x=600,
+        width_y=500,
+        space_x=100,
+        space_y=100,
+    )
+    with pytest.raises(Exception):
+        pdk = PDK(name="Mock", layers={"M1": m1, "V1": v1})
+
+    # metals not orthogonal
     m1 = LayerMetal(
         name="M1",
         gds_layer_number=1,
@@ -100,7 +100,7 @@ def test_two():
         space=[400],
         stop_pitch=1000,
         stop_point=200,
-        stop_offset=0
+        stop_offset=0,
     )
     m2 = LayerMetal(
         name="M2",
@@ -113,19 +113,19 @@ def test_two():
         space=[300, 300, 400, 400, 400, 300, 300],
         stop_pitch=1000,
         stop_point=350,
-        stop_offset=0
+        stop_offset=0,
     )
     v1 = LayerVia(
         name="V1",
         gds_layer_number=21,
-        stack=['M1', 'M2'],
+        stack=["M1", "M2"],
         width_x=600,
         width_y=500,
         space_x=100,
-        space_y=100
+        space_y=100,
     )
     with pytest.raises(Exception):
-        pdk = PDK(name= "Mock", layers={'M1': m1, 'M2': m2, 'V1': v1})
+        pdk = PDK(name="Mock", layers={"M1": m1, "M2": m2, "V1": v1})
 
 
 def test_three():
@@ -140,8 +140,8 @@ def test_three():
         space=[400],
         stop_pitch=1000,
         stop_point=200,
-        stop_offset=0
-        )
+        stop_offset=0,
+    )
     m2 = LayerMetal(
         name="M2",
         gds_layer_number=2,
@@ -153,16 +153,16 @@ def test_three():
         space=[300, 300, 400, 400, 400, 300, 300],
         stop_pitch=1000,
         stop_point=350,
-        stop_offset=0
-        )
+        stop_offset=0,
+    )
     v1 = LayerVia(
         name="V1",
         gds_layer_number=21,
-        stack=['M1', 'M2'],
+        stack=["M1", "M2"],
         width_x=600,
         width_y=500,
         space_x=100,
-        space_y=100
-        )
-    pdk = PDK(name= "Mock", layers={'M1': m1, 'M2': m2, 'V1': v1})
-    pdk.generate_adr_collaterals(my_dir, 1080, 4, 900, 7, [0, 0, 10*1080, 10*900])
+        space_y=100,
+    )
+    pdk = PDK(name="Mock", layers={"M1": m1, "M2": m2, "V1": v1})
+    pdk.generate_adr_collaterals(my_dir, 1080, 4, 900, 7, [0, 0, 10 * 1080, 10 * 900])

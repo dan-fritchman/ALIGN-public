@@ -3,65 +3,73 @@ import json
 
 if __name__ == "__main__":
 
-  args,tech = parse_args()
+    args, tech = parse_args()
 
+    with open("INPUT/sc_placer_out.json", "rt") as fp:
+        placer_results = json.load(fp)
 
-  with open( "INPUT/sc_placer_out.json", "rt") as fp:
-    placer_results = json.load( fp)
+    with open("INPUT/sc_global_router_out.json", "rt") as fp:
+        global_router_results = json.load(fp)
 
-  with open( "INPUT/sc_global_router_out.json", "rt") as fp:
-    global_router_results = json.load( fp)
+    print(placer_results)
+    print(global_router_results)
 
+    adts = {}
 
-  print( placer_results)
-  print( global_router_results)
+    for leaf in placer_results["leaves"]:
+        leaf_bbox = leaf["bbox"]
+        nm = leaf["template_name"]
 
-  adts = {}
+        adt = ADT(tech, nm, npp=2 * leaf_bbox[2], nr=(leaf_bbox[3] + 1) // 2)
+        adts[nm] = adt
 
-  for leaf in placer_results['leaves']:
-    leaf_bbox = leaf['bbox']
-    nm = leaf['template_name']
+        for term in leaf["terminals"]:
+            r = term["rect"]
+            assert term["layer"] == "metal1"
+            assert r[0] == r[2]
+            adt.addM1Terminal(term["net_name"], 2 * r[0])
 
-    adt = ADT( tech, nm, npp=2*leaf_bbox[2], nr=(leaf_bbox[3]+1)//2)
-    adts[nm] = adt
+    # using half (the placer grid)
+    def xg(x):
+        return tech.pitchPoly * tech.halfXGRGrid * x
 
-    for term in leaf['terminals']:
-      r = term['rect']
-      assert term['layer'] == "metal1"
-      assert r[0] == r[2]
-      adt.addM1Terminal( term['net_name'], 2*r[0])
+    def yg(y):
+        return tech.pitchDG * tech.halfYGRGrid * y
 
-  # using half (the placer grid)    
-  def xg( x): 
-    return tech.pitchPoly*tech.halfXGRGrid*x
-  def yg( y): 
-    return tech.pitchDG  *tech.halfYGRGrid*y
+    bbox = placer_results["bbox"]
 
-  bbox = placer_results['bbox']
+    def roundUp(x):
+        return 2 * ((x + 1) // 2)
 
-  def roundUp( x): return 2*((x+1)//2)
+    netl = Netlist(
+        nm=args.block_name, bbox=Rect(0, 0, xg(roundUp(bbox[2])), yg(roundUp(bbox[3])))
+    )
+    adnetl = ADNetlist(args.block_name)
 
-  netl = Netlist( nm=args.block_name, bbox=Rect( 0,0, xg(roundUp(bbox[2])), yg(roundUp(bbox[3]))))
-  adnetl =  ADNetlist( args.block_name)
+    for inst in placer_results["instances"]:
+        tN = inst["template_name"]
+        iN = inst["instance_name"]
+        tr = inst["transformation"]
 
-  for inst in placer_results['instances']:
-    tN = inst['template_name']
-    iN = inst['instance_name']
-    tr = inst['transformation']
+        print(tr)
 
-    print( tr)
+        adnetl.addInstance(
+            ADI(
+                adts[tN],
+                iN,
+                ADITransform(xg(tr["oX"]), yg(tr["oY"]), tr["sX"], tr["sY"]),
+            )
+        )
 
-    adnetl.addInstance( ADI( adts[tN], iN, ADITransform( xg(tr['oX']), yg(tr['oY']), tr['sX'], tr['sY'])))
+        for (f, a) in inst["formal_actual_map"].items():
+            adnetl.connect(iN, f, a)
 
-    for (f,a) in inst['formal_actual_map'].items():
-      adnetl.connect( iN, f, a)
+    adnetl.genNetlist(netl)
 
-  adnetl.genNetlist( netl)
+    for wire in global_router_results["wires"]:
+        netl.newGR(wire["net_name"], Rect(*wire["rect"]), wire["layer"], wire["width"])
 
-  for wire in global_router_results['wires']:
-    netl.newGR( wire['net_name'], Rect( *wire['rect']), wire['layer'], wire['width'])
+    pathlib.Path("INPUT").mkdir(parents=True, exist_ok=True)
 
-  pathlib.Path("INPUT").mkdir(parents=True, exist_ok=True)
-
-  tech.write_files( "INPUT", netl.nm, netl.bbox.toList())
-  netl.write_files( tech, "INPUT", args)
+    tech.write_files("INPUT", netl.nm, netl.bbox.toList())
+    netl.write_files(tech, "INPUT", args)

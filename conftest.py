@@ -1,6 +1,7 @@
 import pytest
 from align.utils import logmanager
-logmanager.reconfigure_loglevels(console_level='WARNING')
+
+logmanager.reconfigure_loglevels(console_level="WARNING")
 
 
 def pytest_addoption(parser):
@@ -8,22 +9,40 @@ def pytest_addoption(parser):
         "--runnightly", action="store_true", default=False, help="run nightly tests"
     )
     parser.addoption(
-        "--runregression", action="store_true", default=False, help="run regression tests"
+        "--runregression",
+        action="store_true",
+        default=False,
+        help="run regression tests",
     )
     parser.addoption(
-        "--maxerrors", type=int, help="Maximum number of circuit errors to tolerate (Use with --runnightly)", default=0
+        "--maxerrors",
+        type=int,
+        help="Maximum number of circuit errors to tolerate (Use with --runnightly)",
+        default=0,
     )
     parser.addoption(
-        "--router_mode", type=str, help="Router mode for nightly run (Use with --runnightly)", default='top_down'
+        "--router_mode",
+        type=str,
+        help="Router mode for nightly run (Use with --runnightly)",
+        default="top_down",
     )
     parser.addoption(
-        "--skipGDS", action="store_true", default=False, help="Skip GDS for nightly run (Use with --runnightly)"
+        "--skipGDS",
+        action="store_true",
+        default=False,
+        help="Skip GDS for nightly run (Use with --runnightly)",
     )
     parser.addoption(
-        "--placer_sa_iterations", type=int, default=10000, help="Set the number of SA iterations for the placer (Use with --runnightly)"
+        "--placer_sa_iterations",
+        type=int,
+        default=10000,
+        help="Set the number of SA iterations for the placer (Use with --runnightly)",
     )
     parser.addoption(
-        "--nvariants", type=int, default=1, help="Number of placements candidates to (attempt to) generate (Use with --runnightly)"
+        "--nvariants",
+        type=int,
+        default=1,
+        help="Number of placements candidates to (attempt to) generate (Use with --runnightly)",
     )
 
 
@@ -55,4 +74,3 @@ def pytest_generate_tests(metafunc):
     if "nvariants" in metafunc.fixturenames:
         nvariants = metafunc.config.getoption("--nvariants")
         metafunc.parametrize("nvariants", [nvariants])
-

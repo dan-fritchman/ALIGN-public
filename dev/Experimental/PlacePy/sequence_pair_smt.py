@@ -43,12 +43,11 @@ def default_constraints(block_vars, solver):
         b = block_vars[j]
         solver.add(a[POS] != b[POS])
         solver.add(a[NEG] != b[NEG])
-        solver.add(z3.Or(
-                a[URX] <= b[LLX],
-                b[URX] <= a[LLX],
-                a[URY] <= b[LLY],
-                b[URY] <= a[LLY]
-            ))
+        solver.add(
+            z3.Or(
+                a[URX] <= b[LLX], b[URX] <= a[LLX], a[URY] <= b[LLY], b[URY] <= a[LLY]
+            )
+        )
 
 
 def find_solution(solver):
@@ -99,7 +98,7 @@ def not_a_below_b(a, b):
 
 def order(a, b, axis, abut=False):
     expression = list()
-    if axis == 'h':  # left to right
+    if axis == "h":  # left to right
         expression.append(not_a_right_of_b(a, b))
         if abut:
             expression.append(a[URX] == b[LLX])
@@ -116,24 +115,30 @@ def order(a, b, axis, abut=False):
 
 def align(a, b, axis):
     expression = list()
-    if axis == 'h':
-        expression.append(z3.Or(
-            z3.And(a[POS] > b[POS], a[NEG] > b[NEG]),
-            z3.And(a[POS] < b[POS], a[NEG] < b[NEG])
-        ))
+    if axis == "h":
+        expression.append(
+            z3.Or(
+                z3.And(a[POS] > b[POS], a[NEG] > b[NEG]),
+                z3.And(a[POS] < b[POS], a[NEG] < b[NEG]),
+            )
+        )
         # a and b should align horizontally
         expression.append(a[LLY] == b[LLY])
     else:
-        expression.append(z3.Or(
-            z3.And(a[POS] > b[POS], a[NEG] < b[NEG]),
-            z3.And(a[POS] < b[POS], a[NEG] > b[NEG])
-        ))
+        expression.append(
+            z3.Or(
+                z3.And(a[POS] > b[POS], a[NEG] < b[NEG]),
+                z3.And(a[POS] < b[POS], a[NEG] > b[NEG]),
+            )
+        )
         # a and b should align vertically
         expression.append(a[LLX] == b[LLX])
     return z3.And(*expression)
 
 
-def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_instances=None):
+def generate_sequence_pair(
+    constraints, solver, n=NUM_SOLUTIONS, additional_instances=None
+):
 
     # Collect instances
     instances = list()
@@ -145,10 +150,22 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
         elif const["constraint"] in ["Align", "Order", "SameTemplate"]:
             instances.extend(const["instances"])
             if const["constraint"] == "Align":
-                assert const["direction"] in ["h_bottom", "v_left"], f"Not implemented yet: {const}"
+                assert const["direction"] in [
+                    "h_bottom",
+                    "v_left",
+                ], f"Not implemented yet: {const}"
         elif const["constraint"] == "PlaceOnBoundary":
             # for schema verify that all of the below are disjoint
-            for attr in ["north", "south", "east", "west", "northeast", "northwest", "southeast", "southwest"]:
+            for attr in [
+                "north",
+                "south",
+                "east",
+                "west",
+                "northeast",
+                "northwest",
+                "southeast",
+                "southwest",
+            ]:
                 if const.get(attr, False):
                     if isinstance(const[attr], list):
                         instances.extend(const[attr])
@@ -173,7 +190,7 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
         if const["constraint"] == "SymmetricBlocks":
             symm_self = list()
             symm_pair = list()
-            for p in const['pairs']:
+            for p in const["pairs"]:
                 if len(p) == 2:
                     symm_pair.append(p)
                 else:
@@ -183,13 +200,13 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
                 a = block_vars[p[0]]
                 b = block_vars[p[1]]
                 # a and b should align along the axis
-                solver.add(align(a, b, 'h'))
+                solver.add(align(a, b, "h"))
 
             for p in itertools.combinations(symm_self, 2):
                 a = block_vars[p[0]]
                 b = block_vars[p[1]]
                 # a is either above or below b
-                solver.add(z3.Or(order(a, b, 'v'), order(b, a, 'v')))
+                solver.add(z3.Or(order(a, b, "v"), order(b, a, "v")))
                 # centerlines should match
                 solver.add(a[LLX] + a[URX] == b[LLX] + b[URX])
 
@@ -198,14 +215,16 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
                 for j, k in symm_pair:
                     a = block_vars[j]
                     b = block_vars[k]
-                    solver.add(z3.Or(
-                        z3.And(order(a, s, 'h'), order(s, b, 'h')),
-                        z3.And(order(b, s, 'h'), order(s, a, 'h')),
-                        z3.And(order(s, a, 'v'), order(s, b, 'v')),
-                        z3.And(order(a, s, 'v'), order(b, s, 'v'))
-                    ))
+                    solver.add(
+                        z3.Or(
+                            z3.And(order(a, s, "h"), order(s, b, "h")),
+                            z3.And(order(b, s, "h"), order(s, a, "h")),
+                            z3.And(order(s, a, "v"), order(s, b, "v")),
+                            z3.And(order(a, s, "v"), order(b, s, "v")),
+                        )
+                    )
                 # centerlines should match
-                solver.add(a[LLX] + a[URX] + b[LLX] + b[URX] == 2*s[LLX] + 2*s[URX])
+                solver.add(a[LLX] + a[URX] + b[LLX] + b[URX] == 2 * s[LLX] + 2 * s[URX])
 
             # blocks in two separate pairs should not conflict
             for p in itertools.combinations(symm_pair, 2):
@@ -214,19 +233,27 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
                 c = block_vars[p[1][0]]
                 d = block_vars[p[1][1]]
                 # [a,b], [c,d]: a,b cannot be left of c,d
-                solver.add(z3.Not(z3.And(
-                    order(a, c, 'h'),
-                    order(a, d, 'h'),
-                    order(b, c, 'h'),
-                    order(b, d, 'h')
-                    )))
+                solver.add(
+                    z3.Not(
+                        z3.And(
+                            order(a, c, "h"),
+                            order(a, d, "h"),
+                            order(b, c, "h"),
+                            order(b, d, "h"),
+                        )
+                    )
+                )
                 # [a,b], [c,d]: a,b cannot be right of c,d
-                solver.add(z3.Not(z3.And(
-                    order(c, a, 'h'),
-                    order(d, a, 'h'),
-                    order(c, b, 'h'),
-                    order(d, b, 'h')
-                    )))
+                solver.add(
+                    z3.Not(
+                        z3.And(
+                            order(c, a, "h"),
+                            order(d, a, "h"),
+                            order(c, b, "h"),
+                            order(d, b, "h"),
+                        )
+                    )
+                )
 
         elif const["constraint"] == "Order":
             abut = True if "abut" in const and const["abut"] else False
@@ -353,7 +380,7 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
         m = solver.model()
         previous_solution = {str(p): m[p].as_long() for p in m}
         sequence_pairs = [initial_pair]
-        for i in range(n-1):
+        for i in range(n - 1):
 
             clauses = []
             for b in block_vars:
@@ -380,21 +407,43 @@ def generate_sequence_pair(constraints, solver, n=NUM_SOLUTIONS, additional_inst
 
 def test_order():
     constraints = [
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "b", "c"]},
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["a", "b", "c"],
+        },
         {"constraint": "Order", "direction": "left_to_right", "instances": ["c", "a"]},
-        ]
+    ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 1"
 
     constraints = [
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "b", "c"]},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "c"], "abut": True},
-        ]
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["a", "b", "c"],
+        },
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["a", "c"],
+            "abut": True,
+        },
+    ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 2"
 
     constraints = [
-        {"constraint": "Order", "direction": "top_to_bottom", "instances": ["a", "b", "c"]},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["c", "a"], "abut": True},
-        ]
+        {
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["a", "b", "c"],
+        },
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["c", "a"],
+            "abut": True,
+        },
+    ]
     # Legal solution: bca, abc
     #  |a
     # b|
@@ -404,7 +453,7 @@ def test_order():
     constraints = [
         {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "b"]},
         {"constraint": "Order", "direction": "top_to_bottom", "instances": ["a", "b"]},
-        ]
+    ]
     # Legal solution: ba, ab
     # a|
     #  |b
@@ -414,45 +463,69 @@ def test_order():
 def test_align():
     constraints = [
         {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b"]},
-        {"constraint": "Align", "direction": "v_left",   "instances": ["b", "a"]},
-        ]
+        {"constraint": "Align", "direction": "v_left", "instances": ["b", "a"]},
+    ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 1"
 
     constraints = [
         {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b"]},
         {"constraint": "Align", "direction": "h_bottom", "instances": ["b", "c"]},
-        {"constraint": "Align", "direction": "v_left",   "instances": ["a", "c"]},
-        ]
+        {"constraint": "Align", "direction": "v_left", "instances": ["a", "c"]},
+    ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 2"
 
     constraints = [
         {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b"]},
         {"constraint": "Order", "direction": "top_to_bottom", "instances": ["b", "a"]},
-        ]
+    ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 3"
 
 
 def test_symmetry():
     constraints = [
-        {"constraint": "SymmetricBlocks", "direction": "V", "pairs": [["a", "b"], ["c"]]},
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [["a", "b"], ["c"]],
+        },
         {"constraint": "Order", "direction": "top_to_bottom", "instances": ["a", "b"]},
     ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 1"
 
     constraints = [
-        {"constraint": "SymmetricBlocks", "direction": "V", "pairs": [["a", "b"], ["c"]]},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["c", "b", "a"]},
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [["a", "b"], ["c"]],
+        },
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["c", "b", "a"],
+        },
     ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 2"
 
     constraints = [
-        {"constraint": "SymmetricBlocks", "direction": "V", "pairs": [["a", "b"], ["c"]]},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "c", "b"]},
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [["a", "b"], ["c"]],
+        },
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["a", "c", "b"],
+        },
     ]
     assert generate_sequence_pair(constraints, z3.Solver()), "case 3"
 
     constraints = [
-        {"constraint": "SymmetricBlocks", "direction": "V", "pairs": [["a", "b"], ["c"]]},
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [["a", "b"], ["c"]],
+        },
         {"constraint": "Align", "direction": "v_left", "instances": ["b", "a"]},
     ]
     assert not generate_sequence_pair(constraints, z3.Solver()), "case 4"
@@ -462,178 +535,880 @@ def test_align_symmetry():
     constraints = [
         {"constraint": "SymmetricBlocks", "direction": "V", "pairs": [["a", "b"]]},
         {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "c"]},
-        {"constraint": "Align", "direction": "v_left",   "instances": ["b", "c"]},
+        {"constraint": "Align", "direction": "v_left", "instances": ["b", "c"]},
     ]
     assert not generate_sequence_pair(constraints, z3.Solver())
 
 
 def test_1():
     constraints = [
-        {"constraint": "SymmetricBlocks", "direction": "V", "pairs":
-            [["a", "b"], ["c", "d"], ["e"], ["f"], ["g", "h"], ["m", "n"]]},
-        {"constraint": "Order", "direction": "top_to_bottom", "instances": ["f", "a", "c", "g", "m", "e"], "abut": True},
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [["a", "b"], ["c", "d"], ["e"], ["f"], ["g", "h"], ["m", "n"]],
+        },
+        {
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["f", "a", "c", "g", "m", "e"],
+            "abut": True,
+        },
         {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "b"]},
         {"constraint": "Order", "direction": "left_to_right", "instances": ["c", "d"]},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["g", "h"], "abut": True},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["m", "n"]}
-        ]
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["g", "h"],
+            "abut": True,
+        },
+        {"constraint": "Order", "direction": "left_to_right", "instances": ["m", "n"]},
+    ]
     assert generate_sequence_pair(constraints, z3.Solver())
 
 
 def test_2():
     constraints = [
-        {"constraint": "SymmetricBlocks", "direction": "V", "pairs":
-            [["a", "b"], ["c", "d"], ["e"], ["f"], ["g", "h"], ["m", "n"]]},
-        {"constraint": "Order", "direction": "top_to_bottom", "instances": ["f", "a", "c", "g", "m", "e"], "abut": True},
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [["a", "b"], ["c", "d"], ["e"], ["f"], ["g", "h"], ["m", "n"]],
+        },
+        {
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["f", "a", "c", "g", "m", "e"],
+            "abut": True,
+        },
         {"constraint": "Order", "direction": "left_to_right", "instances": ["a", "b"]},
         {"constraint": "Order", "direction": "left_to_right", "instances": ["c", "d"]},
-        {"constraint": "Order", "direction": "left_to_right", "instances": ["g", "h"], "abut": True},
+        {
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["g", "h"],
+            "abut": True,
+        },
         {"constraint": "Order", "direction": "left_to_right", "instances": ["m", "n"]},
-        {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b", "o", "p"]},
-        {"constraint": "Align", "direction": "v_left", "instances": ["c", "g", "r"]}
-        ]
+        {
+            "constraint": "Align",
+            "direction": "h_bottom",
+            "instances": ["a", "b", "o", "p"],
+        },
+        {"constraint": "Align", "direction": "v_left", "instances": ["c", "g", "r"]},
+    ]
     assert generate_sequence_pair(constraints, z3.Solver())
 
 
 def test_3():
     constraints = [
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XPTAIL']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XPPBIAS']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XSW_PULLUP_ENB']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XSW_PBIAS_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_CM_XNLDL_XNLDR', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_CM_XNLDL_XNLDR', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN1', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN1', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XN2', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XN2', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN1', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN1', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN2', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN2', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XNRES0', 'X_XDECAP_NZ3']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XNRES1', 'X_XDECAP_NZ3']},
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XPTAIL"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XPPBIAS"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XSW_PULLUP_ENB"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XSW_PBIAS_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_CM_XNLDL_XNLDR", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_CM_XNLDL_XNLDR", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN1", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN1", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XN2", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XN2", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN1", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN1", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN2", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN2", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XNRES0", "X_XDECAP_NZ3"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XNRES1", "X_XDECAP_NZ3"],
+        },
     ]
     assert generate_sequence_pair(constraints, z3.Solver())
 
 
 def test_4():
     constraints = [
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XPTAIL']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XPPBIAS']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XSW_PULLUP_ENB']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XDECAP_P', 'X_XSW_PBIAS_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPTAIL', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XP2', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XPPBIAS', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLUP_ENB', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_DP_XPINP_XPINN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_XINVP1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_XINVP2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PBIAS_EN', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_DP_XPINP_XPINN', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP1', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVP2', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XSW_PULLDN_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_CM_XNLDL_XNLDR']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XSW_PULLDN_EN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XINVN1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XMP_TIE_HI', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_CM_XNLDL_XNLDR', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_CM_XNLDL_XNLDR', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN1', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XSW_PULLDN_EN1', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XN2', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XN2', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN1', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN1', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN2', 'X_XNRES0']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XINVN2', 'X_XNRES1']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XNRES0', 'X_XDECAP_NZ3']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'top_to_bottom', 'instances': ['X_XNRES1', 'X_XDECAP_NZ3']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'left_to_right', 'instances': ['X_XPTAIL', 'X_XP2', 'X_XPPBIAS', 'X_XSW_PULLUP_ENB', 'X_XSW_PBIAS_EN']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'left_to_right', 'instances': ['X_DP_XPINP_XPINN', 'X_XINVP1', 'X_XINVP2', 'X_XMP_TIE_HI']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'left_to_right', 'instances': ['X_XSW_PULLDN_EN', 'X_CM_XNLDL_XNLDR', 'X_XSW_PULLDN_EN1', 'X_XN2', 'X_XINVN1', 'X_XINVN2']},
-        {'abut': False, 'constraint': 'Order', 'direction': 'left_to_right', 'instances': ['X_XNRES0', 'X_XNRES1']},
-        {'constraint': 'SymmetricBlocks', 'direction': 'V', 'pairs': [['X_XPTAIL'], ['X_DP_XPINP_XPINN'], ['X_CM_XNLDL_XNLDR'], ['X_XSW_PULLDN_EN', 'X_XSW_PULLDN_EN1']]},
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XPTAIL"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XPPBIAS"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XSW_PULLUP_ENB"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XDECAP_P", "X_XSW_PBIAS_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPTAIL", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XP2", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XPPBIAS", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLUP_ENB", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_DP_XPINP_XPINN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_XINVP1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_XINVP2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PBIAS_EN", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_DP_XPINP_XPINN", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP1", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVP2", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XSW_PULLDN_EN"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_CM_XNLDL_XNLDR"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XSW_PULLDN_EN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XINVN1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XMP_TIE_HI", "X_XINVN2"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_CM_XNLDL_XNLDR", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_CM_XNLDL_XNLDR", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN1", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XSW_PULLDN_EN1", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XN2", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XN2", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN1", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN1", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN2", "X_XNRES0"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XINVN2", "X_XNRES1"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XNRES0", "X_XDECAP_NZ3"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "top_to_bottom",
+            "instances": ["X_XNRES1", "X_XDECAP_NZ3"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": [
+                "X_XPTAIL",
+                "X_XP2",
+                "X_XPPBIAS",
+                "X_XSW_PULLUP_ENB",
+                "X_XSW_PBIAS_EN",
+            ],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["X_DP_XPINP_XPINN", "X_XINVP1", "X_XINVP2", "X_XMP_TIE_HI"],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": [
+                "X_XSW_PULLDN_EN",
+                "X_CM_XNLDL_XNLDR",
+                "X_XSW_PULLDN_EN1",
+                "X_XN2",
+                "X_XINVN1",
+                "X_XINVN2",
+            ],
+        },
+        {
+            "abut": False,
+            "constraint": "Order",
+            "direction": "left_to_right",
+            "instances": ["X_XNRES0", "X_XNRES1"],
+        },
+        {
+            "constraint": "SymmetricBlocks",
+            "direction": "V",
+            "pairs": [
+                ["X_XPTAIL"],
+                ["X_DP_XPINP_XPINN"],
+                ["X_CM_XNLDL_XNLDR"],
+                ["X_XSW_PULLDN_EN", "X_XSW_PULLDN_EN1"],
+            ],
+        },
     ]
     assert generate_sequence_pair(constraints, z3.Solver())
 
@@ -641,14 +1416,20 @@ def test_4():
 def test_variants_sanity():
     for abc in itertools.permutations("abc"):
         constraints = [
-            {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b", "c"]},
+            {
+                "constraint": "Align",
+                "direction": "h_bottom",
+                "instances": ["a", "b", "c"],
+            },
             {"constraint": "Order", "direction": "left_to_right", "instances": abc},
         ]
         assert generate_sequence_pair(constraints, z3.Solver(), n=24)
 
 
 def test_variants():
-    constraints = [{"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b"]}]
+    constraints = [
+        {"constraint": "Align", "direction": "h_bottom", "instances": ["a", "b"]}
+    ]
     s = time.time()
     sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=24)
     e = time.time()
@@ -660,14 +1441,28 @@ def test_variants():
 
 def test_boundary():
     constraints = [{"constraint": "PlaceOnBoundary", "northwest": "x"}]
-    sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=10, additional_instances=["y"])
-    assert set(sequence_pairs) == {'x y,x y', 'x y,y x'}
+    sequence_pairs = generate_sequence_pair(
+        constraints, z3.Solver(), n=10, additional_instances=["y"]
+    )
+    assert set(sequence_pairs) == {"x y,x y", "x y,y x"}
 
-    constraints = [{"constraint": "PlaceOnBoundary", "northwest": "x", "northeast": "y"}]
-    sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=10, additional_instances=["x", "y"])
-    assert set(sequence_pairs) == {'x y,x y'}
+    constraints = [
+        {"constraint": "PlaceOnBoundary", "northwest": "x", "northeast": "y"}
+    ]
+    sequence_pairs = generate_sequence_pair(
+        constraints, z3.Solver(), n=10, additional_instances=["x", "y"]
+    )
+    assert set(sequence_pairs) == {"x y,x y"}
 
-    constraints = [{"constraint": "PlaceOnBoundary", "northwest": "a", "northeast": "b", "southwest": "c", "southeast": "d"}]
+    constraints = [
+        {
+            "constraint": "PlaceOnBoundary",
+            "northwest": "a",
+            "northeast": "b",
+            "southwest": "c",
+            "southeast": "d",
+        }
+    ]
     sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=10)
     assert len(sequence_pairs) == 4
 
@@ -675,11 +1470,20 @@ def test_boundary():
     sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=10)
     assert len(sequence_pairs) == 1
 
-    constraints = [{"constraint": "PlaceOnBoundary", "northwest": "a", "north": ["b", "c"], "northeast": "d"}]
+    constraints = [
+        {
+            "constraint": "PlaceOnBoundary",
+            "northwest": "a",
+            "north": ["b", "c"],
+            "northeast": "d",
+        }
+    ]
     sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=10)
     assert len(sequence_pairs) == 2
 
-    constraints = [{"constraint": "PlaceOnBoundary", "northwest": "a", "north": ["b", "c"]}]
+    constraints = [
+        {"constraint": "PlaceOnBoundary", "northwest": "a", "north": ["b", "c"]}
+    ]
     sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=10)
     assert len(sequence_pairs) == 2
 
@@ -693,7 +1497,9 @@ def test_boundary():
 
 @pytest.mark.skip()
 def test_runtime():
-    constraints = [{"constraint": "SameTemplate", "instances": ["a", "b", "c", "d", "e"]}]
+    constraints = [
+        {"constraint": "SameTemplate", "instances": ["a", "b", "c", "d", "e"]}
+    ]
     s = time.time()
     sequence_pairs = generate_sequence_pair(constraints, z3.Solver(), n=1000)
     e = time.time()

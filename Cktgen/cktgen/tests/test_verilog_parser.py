@@ -23,8 +23,7 @@ endmodule
 
 """
 
-#    print(list(generate_tokens(txt)))
+    #    print(list(generate_tokens(txt)))
 
     lp = VerilogParser()
-    lp.parse( txt)
-
+    lp.parse(txt)

@@ -7,7 +7,7 @@ from align.compiler.preprocess import (
     find_dummy_hier,
     remove_dummies,
     remove_dummy_devices,
-    define_SD
+    define_SD,
 )
 
 
@@ -15,8 +15,16 @@ from align.compiler.preprocess import (
 def db():
     library = Library(loadbuiltins=False)
     with set_context(library):
-        cmodel = Model(name="CAP", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "PARALLEL": 1})
-        rmodel = Model(name="RES", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "PARALLEL": 1})
+        cmodel = Model(
+            name="CAP",
+            pins=["PLUS", "MINUS"],
+            parameters={"VALUE": "5.0", "PARALLEL": 1},
+        )
+        rmodel = Model(
+            name="RES",
+            pins=["PLUS", "MINUS"],
+            parameters={"VALUE": "5.0", "PARALLEL": 1},
+        )
         library.append(cmodel)
         library.append(rmodel)
         model_nmos = Model(
@@ -75,7 +83,7 @@ def db():
                 name="M1",
                 model="TESTMOS",
                 pins={"D": "D", "G": "G", "S": "S", "B": "B"},
-                parameters={"PARAM1": "1.0", "M": 1, "PARAM2": "2"}
+                parameters={"PARAM1": "1.0", "M": 1, "PARAM2": "2"},
             )
         )
         subckt.elements.append(
@@ -83,7 +91,7 @@ def db():
                 name="M2",
                 model="TESTMOS",
                 pins={"D": "D", "G": "G", "S": "S", "B": "B"},
-                parameters={"PARAM1": "1.0", "M": 1, "PARAM2": "2"}
+                parameters={"PARAM1": "1.0", "M": 1, "PARAM2": "2"},
             )
         )
 
@@ -96,25 +104,31 @@ def test_parallel(db):
     assert db.get_element("C1").parameters == {"VALUE": "2", "PARALLEL": "1"}
     add_parallel_devices(db)
     assert db.get_element("C1").parameters == {"VALUE": "2", "PARALLEL": "2"}
-    assert db.get_element("C2") is None, 'C2 should have been removed'
+    assert db.get_element("C2") is None, "C2 should have been removed"
     assert db.get_element("R1").parameters == {"VALUE": "10", "PARALLEL": "3"}
-    assert db.get_element("R2") is None, 'R2 should have been removed'
-    assert db.get_element("R3") is None, 'R3 should have been removed'
+    assert db.get_element("R2") is None, "R2 should have been removed"
+    assert db.get_element("R3") is None, "R3 should have been removed"
     assert db.get_element("M1").parameters == {
         "PARAM1": "1.0",
         "M": "1",
         "PARAM2": "2",
         "PARALLEL": "2",
     }
-    assert db.get_element("M2") is None, 'Should M2 have been removed from the db as it has been merged to M1?'
+    assert (
+        db.get_element("M2") is None
+    ), "Should M2 have been removed from the db as it has been merged to M1?"
 
 
 @pytest.fixture
 def dbs():
     library = Library(loadbuiltins=False)
     with set_context(library):
-        cmodel = Model(name="CAP", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "STACK": 1})
-        rmodel = Model(name="RES", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "STACK": 1})
+        cmodel = Model(
+            name="CAP", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "STACK": 1}
+        )
+        rmodel = Model(
+            name="RES", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "STACK": 1}
+        )
         library.append(cmodel)
         library.append(rmodel)
         model_nmos = Model(
@@ -213,7 +227,7 @@ def test_series(dbs):
         "PARAM1": "1.0",
         "M": "1",
         "PARAM2": "2",
-        "STACK": "1"
+        "STACK": "1",
     }
     add_series_devices(dbs)
     assert dbs.get_element("C1").parameters == {"VALUE": "2", "STACK": "2"}
@@ -231,8 +245,12 @@ def test_series(dbs):
         "STACK": "3",
     }
     assert len(dbs.elements) == 4
-    assert dbs.get_element("M2") is None, 'Should M2 have been removed from the db as it has been merged to M1?'
-    assert dbs.get_element("M5") is None, 'Should M5 have been removed from the db as it has been merged to M3?'
+    assert (
+        dbs.get_element("M2") is None
+    ), "Should M2 have been removed from the db as it has been merged to M1?"
+    assert (
+        dbs.get_element("M5") is None
+    ), "Should M5 have been removed from the db as it has been merged to M3?"
 
 
 @pytest.fixture
@@ -380,8 +398,18 @@ def test_swap(dbswap):
     assert dbswap.get_element("M1").pins == {"D": "VDD", "G": "G", "S": "GND", "B": "B"}
     define_SD(dbswap)
     assert dbswap.get_element("M1").pins == {"D": "GND", "G": "G", "S": "VDD", "B": "B"}
-    assert dbswap.get_element("M2").pins == {"D": "NET1", "G": "G", "S": "VDD", "B": "B"}
-    assert dbswap.get_element("M3").pins == {"D": "GND", "G": "G", "S": "NET1", "B": "B"}
+    assert dbswap.get_element("M2").pins == {
+        "D": "NET1",
+        "G": "G",
+        "S": "VDD",
+        "B": "B",
+    }
+    assert dbswap.get_element("M3").pins == {
+        "D": "GND",
+        "G": "G",
+        "S": "NET1",
+        "B": "B",
+    }
     assert dbswap.get_element("M4").pins == {"D": "VDD", "G": "G", "S": "GND", "B": "B"}
     assert dbswap.get_element("M5").pins == {"D": "VDD", "G": "G", "S": "GND", "B": "B"}
 
@@ -394,7 +422,9 @@ def dbdcap():
         library.append(model_pmos)
         model_nmos = Model(name="NMOS", pins=["D", "G", "S", "B"])
         library.append(model_nmos)
-        subckt = SubCircuit(name="SUBCKT", pins=["VDD", "G", "OUT", "VSS"], parameters=None)
+        subckt = SubCircuit(
+            name="SUBCKT", pins=["VDD", "G", "OUT", "VSS"], parameters=None
+        )
         library.append(subckt)
 
     with set_context(subckt.constraints):

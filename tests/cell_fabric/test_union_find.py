@@ -1,5 +1,5 @@
-
 from align.cell_fabric.remove_duplicates import UnionFind
+
 
 def test_three():
     x = UnionFind()
@@ -22,9 +22,10 @@ def test_three():
     assert x.root() == z.root()
     assert y.root() == z.root()
 
+
 def test_big():
     n = 50000
-    lst = [ UnionFind() for i in range(n)]
+    lst = [UnionFind() for i in range(n)]
     last = None
     for uf in lst:
         if last is not None:

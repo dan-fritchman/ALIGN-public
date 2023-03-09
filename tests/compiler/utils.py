@@ -15,7 +15,8 @@ out_path = pathlib.Path(__file__).resolve().parent / "Results"
 
 
 def comparator(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} clk vccx vin vip von vop vssx
         mn0 vcom clk vssx vssx n w=2.88e-6 m=1 nf=16
         mn1 vin_d vin vcom vssx n w=360e-9 m=18 nf=2
@@ -33,12 +34,14 @@ def comparator(name):
         mp13 von vin_o vccx vccx p w=360e-9 m=1 nf=2
         mp14 vop vip_o vccx vccx p w=360e-9 m=1 nf=2
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def comparator_hier(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt comparator clk vccx vin vip von vop vssx
         mn0 vcom clk vssx vssx n w=2.88e-6 m=1 nf=16
         mn1 vin_d vin vcom vssx n w=360e-9 m=18 nf=2
@@ -61,7 +64,8 @@ def comparator_hier(name):
         mn0 vssx von vssx vssx n w=360e-9 m=1 nf=2
         mn1 vssx vop vssx vssx n w=360e-9 m=1 nf=2
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
@@ -303,20 +307,20 @@ def build_example(name, netlist, constraints):
         fp.write(netlist)
     if isinstance(constraints, dict):
         for k, v in constraints.items():
-            with open(example / f'{k}.const.json', 'w') as fp:
+            with open(example / f"{k}.const.json", "w") as fp:
                 fp.write(json.dumps(v, indent=2))
     elif constraints:
-        with open(example / f'{name}.const.json', 'w') as fp:
+        with open(example / f"{name}.const.json", "w") as fp:
             fp.write(json.dumps(constraints, indent=2))
     return example / (name + ".sp")
 
 
 def get_test_id():
     try:
-        t = os.environ.get('PYTEST_CURRENT_TEST')
-        t = t.split(' ')[0].split(':')[-1]
-        t = t.replace('[', '_').replace(']', '').replace('-', '_')
+        t = os.environ.get("PYTEST_CURRENT_TEST")
+        t = t.split(" ")[0].split(":")[-1]
+        t = t.replace("[", "_").replace("]", "").replace("-", "_")
         t = t[5:]
     except BaseException:
-        t = 'debug'
+        t = "debug"
     return t

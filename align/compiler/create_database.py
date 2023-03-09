@@ -30,7 +30,9 @@ class CreateDatabase:
         Add user constraints to the design
         """
         top_subckt = self.lib.find(name.upper())
-        assert top_subckt, f"{name.upper()} not found in library {[e.name for e in self.lib]}"
+        assert (
+            top_subckt
+        ), f"{name.upper()} not found in library {[e.name for e in self.lib]}"
         logger.debug(f"creating database for {top_subckt}")
         if self.circuit.parameters:
             self.resolve_parameters(name, self.circuit.parameters)
@@ -46,11 +48,19 @@ class CreateDatabase:
         for subckt in self.lib:
             if isinstance(subckt, SubCircuit):
                 if get_generator(subckt.name, pdk_dir) and not subckt.generator:
-                    logger.debug(f"available generator for this subcircuit {subckt.name} in PDK ")
+                    logger.debug(
+                        f"available generator for this subcircuit {subckt.name} in PDK "
+                    )
                     subckt.add_generator(subckt.name)
-                    if not [True for const in subckt.constraints if isinstance(const, constraint.Generator)]:
+                    if not [
+                        True
+                        for const in subckt.constraints
+                        if isinstance(const, constraint.Generator)
+                    ]:
                         with set_context(subckt.constraints):
-                            subckt.constraints.append(constraint.Generator(name=subckt.name))
+                            subckt.constraints.append(
+                                constraint.Generator(name=subckt.name)
+                            )
                         logger.debug(f"adding generator for {subckt.name}")
 
     def add_user_const(self):
@@ -60,14 +70,19 @@ class CreateDatabase:
 
     def propagate_const_top_to_bottom(self, top_name, traversed):
         top = self.lib.find(top_name)
-        all_subckt = {inst.model for inst in top.elements if isinstance(self.lib.find(inst.model), SubCircuit)}
+        all_subckt = {
+            inst.model
+            for inst in top.elements
+            if isinstance(self.lib.find(inst.model), SubCircuit)
+        }
         all_subckt = all_subckt - traversed
         if not all_subckt:
             return
         for const in top.constraints:
-            global_const = [constraint.ConfigureCompiler,
-                            constraint.DoNotUseLib,
-                            ]
+            global_const = [
+                constraint.ConfigureCompiler,
+                constraint.DoNotUseLib,
+            ]
 
             if any(isinstance(const, x) for x in global_const):
                 for child in all_subckt:
@@ -99,9 +114,7 @@ class CreateDatabase:
         subckt = self.lib.find(name.upper())
         assert subckt, f"No subckt found with name: {name}"
         assert isinstance(subckt, SubCircuit), f"{subckt.name} is not a subcircuit"
-        logger.debug(
-            f"Resolving subckt {name} param {subckt.parameters} with {param} "
-        )
+        logger.debug(f"Resolving subckt {name} param {subckt.parameters} with {param} ")
 
         if name.upper() in self.multi_param_instantiation:
             # Second time instantiation of this circuit with same parameters
@@ -117,9 +130,7 @@ class CreateDatabase:
                     f"Second similar instance found of module {new_name},{self.multi_param_instantiation}"
                 )
             else:
-                logger.debug(
-                    f"New instance found of {name}, assigning name {new_name}"
-                )
+                logger.debug(f"New instance found of {name}, assigning name {new_name}")
                 self.multi_param_instantiation.append(new_name)
                 with set_context(self.lib):
                     subckt_new = SubCircuit(
@@ -127,7 +138,7 @@ class CreateDatabase:
                         pins=subckt.pins,
                         parameters=updated_param,
                         constraints=subckt.constraints,
-                        generator=subckt.generator
+                        generator=subckt.generator,
                     )
                 assert (
                     self.lib.find(new_name) is None
@@ -166,7 +177,9 @@ class CreateDatabase:
                         inst.parameters[p] = self.circuit.parameters[v]
                     elif v in subckt.parameters:
                         if subckt.parameters[v] in self.circuit.parameters:
-                            inst.parameters[p] = self.circuit.parameters[subckt.parameters[v]]
+                            inst.parameters[p] = self.circuit.parameters[
+                                subckt.parameters[v]
+                            ]
                         else:
                             inst.parameters[p] = subckt.parameters[v]
                 new_name = self.resolve_parameters(inst.model.upper(), inst.parameters)
@@ -186,7 +199,9 @@ class CreateDatabase:
                             inst.parameters[p] = self.circuit.parameters[v]
                         elif v in subckt.parameters.keys():
                             if subckt.parameters[v] in self.circuit.parameters:
-                                inst.parameters[p] = self.circuit.parameters[subckt.parameters[v]]
+                                inst.parameters[p] = self.circuit.parameters[
+                                    subckt.parameters[v]
+                                ]
                             else:
                                 inst.parameters[p] = subckt.parameters[v]
 

@@ -1,17 +1,21 @@
 __all__ = [
-    'BaseModel', 'List', 'Dict',
-    'validator', 'root_validator', 'validate_arguments',
-    'Optional', 'Union',
-    'NamedTuple', 'Literal',
-    'ClassVar', 'PrivateAttr'
+    "BaseModel",
+    "List",
+    "Dict",
+    "validator",
+    "root_validator",
+    "validate_arguments",
+    "Optional",
+    "Union",
+    "NamedTuple",
+    "Literal",
+    "ClassVar",
+    "PrivateAttr",
 ]
 
 # Pass through directly from typing
-from typing import \
-    Optional, \
-    Union, \
-    NamedTuple, \
-    ClassVar
+from typing import Optional, Union, NamedTuple, ClassVar
+
 try:
     # Python 3.8+
     from typing import Literal
@@ -20,11 +24,7 @@ except:
     from typing_extensions import Literal
 
 # Pass through directly from pydantic
-from pydantic import \
-    validator, \
-    root_validator, \
-    validate_arguments, \
-    PrivateAttr
+from pydantic import validator, root_validator, validate_arguments, PrivateAttr
 
 # Custom ALIGN types (BaseModel, List, Dict) defined below
 import pydantic.generics
@@ -35,7 +35,7 @@ import string
 import contextvars
 import contextlib
 
-_ctx = contextvars.ContextVar('current_constructor', default=None)
+_ctx = contextvars.ContextVar("current_constructor", default=None)
 
 
 @contextlib.contextmanager
@@ -46,28 +46,33 @@ def set_context(obj):
     finally:
         _ctx.reset(token)
 
+
 def cast_to_solver(item, solver):
-    if hasattr(item, 'translate'):
+    if hasattr(item, "translate"):
         generator = item.translate(solver)
         if generator is None:
-            raise NotImplementedError(f'{item}.translate() did not return a valid generator')
+            raise NotImplementedError(
+                f"{item}.translate() did not return a valid generator"
+            )
         assert solver is not None
         formulae = list(generator)
         if len(formulae) == 0:
-            raise NotImplementedError(f'{item}.translate() yielded an empty list of expressions')
+            raise NotImplementedError(
+                f"{item}.translate() yielded an empty list of expressions"
+            )
         yield from solver.annotate(formulae, solver.label(item))
-    
-class BaseModel(pydantic.BaseModel):
 
+
+class BaseModel(pydantic.BaseModel):
     @property
     def parent(self):
         return self._parent
 
     class Config:
         validate_assignment = True
-        extra = 'forbid'
+        extra = "forbid"
         allow_mutation = False
-        copy_on_model_validation = 'none'
+        copy_on_model_validation = "none"
 
     def __init__(self, *args, **kwargs):
         self._parent = _ctx.get()
@@ -81,27 +86,21 @@ class BaseModel(pydantic.BaseModel):
             elif isinstance(val, dict):
                 return {to_dict(k): to_dict(v) for k, v in val.items()}
             elif isinstance(val, (BaseModel, Dict)):
-                return val.dict(
-                    exclude_unset=True,
-                    exclude_defaults=True)
+                return val.dict(exclude_unset=True, exclude_defaults=True)
             elif isinstance(val, List):
-                return val.dict(
-                    exclude_unset=True,
-                    exclude_defaults=True)['__root__']
+                return val.dict(exclude_unset=True, exclude_defaults=True)["__root__"]
             else:
                 return val
+
         ctx = self.parent if _ctx.get() is None else _ctx.get()
         v = {
             **self.dict(
                 exclude_unset=True,
                 exclude_defaults=True,
                 include=include,
-                exclude=exclude),
-            **{
-                k: to_dict(v)
-                for k, v
-                in update.items()
-            }
+                exclude=exclude,
+            ),
+            **{k: to_dict(v) for k, v in update.items()},
         }
         with set_context(ctx):
             return self.__class__(**v)
@@ -109,14 +108,14 @@ class BaseModel(pydantic.BaseModel):
     @classmethod
     def _validator_ctx(cls):
         self = _ctx.get()
-        assert self is not None, 'Could not retrieve ctx'
+        assert self is not None, "Could not retrieve ctx"
         return self
 
     _parent = pydantic.PrivateAttr()
 
 
-KeyT = typing.TypeVar('KeyT')
-DataT = typing.TypeVar('DataT')
+KeyT = typing.TypeVar("KeyT")
+DataT = typing.TypeVar("DataT")
 
 
 class List(pydantic.generics.GenericModel, typing.Generic[DataT]):
@@ -132,8 +131,8 @@ class List(pydantic.generics.GenericModel, typing.Generic[DataT]):
 
     class Config:
         validate_assignment = True
-        extra = 'forbid'
-        copy_on_model_validation = 'none'
+        extra = "forbid"
+        copy_on_model_validation = "none"
         allow_mutation = False
 
     def append(self, item: DataT):
@@ -171,12 +170,12 @@ class List(pydantic.generics.GenericModel, typing.Generic[DataT]):
         return self.__root__ == other
 
     def __init__(self, *args, **kwargs):
-        if '__root__' not in kwargs:
+        if "__root__" not in kwargs:
             if len(args) == 1:
-                kwargs['__root__'] = args[0]
+                kwargs["__root__"] = args[0]
                 args = tuple()
             elif len(args) == 0:
-                kwargs['__root__'] = []
+                kwargs["__root__"] = []
         self._parent = _ctx.get()
         with set_context(self):
             super().__init__(*args, **kwargs)
@@ -184,8 +183,7 @@ class List(pydantic.generics.GenericModel, typing.Generic[DataT]):
         self._cache = set()
 
     def _gen_commit_id(self, nchar=8):
-        id_ = ''.join(random.choices(
-            string.ascii_uppercase + string.digits, k=nchar))
+        id_ = "".join(random.choices(string.ascii_uppercase + string.digits, k=nchar))
         return self._gen_commit_id(nchar) if id_ in self._commits else id_
 
     def checkpoint(self):
@@ -197,7 +195,7 @@ class List(pydantic.generics.GenericModel, typing.Generic[DataT]):
         del self[length:]
 
     def revert(self, name=None):
-        assert len(self._commits) > 0, 'Top of scope. Nothing to revert'
+        assert len(self._commits) > 0, "Top of scope. Nothing to revert"
         if name is None or name == next(reversed(self._commits)):
             self._revert()
         else:
@@ -221,17 +219,17 @@ class Dict(pydantic.generics.GenericModel, typing.Generic[KeyT, DataT]):
 
     class Config:
         validate_assignment = True
-        extra = 'forbid'
-        copy_on_model_validation = 'none'
+        extra = "forbid"
+        copy_on_model_validation = "none"
         allow_mutation = False
 
     def __init__(self, *args, **kwargs):
-        if '__root__' not in kwargs:
+        if "__root__" not in kwargs:
             if len(args) == 1:
-                kwargs['__root__'] = args[0]
+                kwargs["__root__"] = args[0]
                 args = tuple()
             elif len(args) == 0:
-                kwargs['__root__'] = {}
+                kwargs["__root__"] = {}
         self._parent = _ctx.get()
         with set_context(self):
             super().__init__(*args, **kwargs)

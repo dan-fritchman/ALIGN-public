@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def read_models(pdk_dir: pathlib.Path, config_path=None):
 
-    pdk_models = get_generator('pdk_models', pdk_dir)
+    pdk_models = get_generator("pdk_models", pdk_dir)
     library = Library(loadbuiltins=True, pdk_models=pdk_models)
     ckt_parser = SpiceParser(library=library)
 
@@ -24,13 +24,13 @@ def read_models(pdk_dir: pathlib.Path, config_path=None):
         logger.warning(f"Missing {model_statements}, only basic models will be used")
     else:
         logger.debug(f"Using model file from {model_statements}")
-        with open(model_statements, 'r') as f:
+        with open(model_statements, "r") as f:
             lines = f.read()
         ckt_parser.parse(lines)
     return ckt_parser
 
 
-def read_lib(pdk_dir: pathlib.Path,  config_path=None):
+def read_lib(pdk_dir: pathlib.Path, config_path=None):
     # Read model file to map devices
 
     lib_parser = read_models(pdk_dir)
@@ -58,15 +58,14 @@ def read_lib(pdk_dir: pathlib.Path,  config_path=None):
 
 
 def order_lib(library):
-    primitives = [
-        v for v in library
-        if isinstance(v, SubCircuit)
-    ]
+    primitives = [v for v in library if isinstance(v, SubCircuit)]
     # TODO: update the order based on weighing mechanism
     primitives.sort(
-        key=lambda x: (len(x.elements),
-                       1 / len(x.nets),
-                       len(set([e.model for e in x.elements]))),
+        key=lambda x: (
+            len(x.elements),
+            1 / len(x.nets),
+            len(set([e.model for e in x.elements])),
+        ),
         reverse=True,
     )
     logger.debug(f"all library elements: {[ele.name for ele in primitives]}")

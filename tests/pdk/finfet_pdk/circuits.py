@@ -2,7 +2,8 @@ import textwrap
 
 
 def comparator(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} clk vccx vin vip von vop vssx
         mn0 vcom clk vssx vssx n w=2.88e-6 m=1 nf=16
         mn1 vin_d vin vcom vssx n w=360e-9 m=18 nf=2
@@ -20,12 +21,14 @@ def comparator(name):
         mp13 von vin_o vccx vccx p w=360e-9 m=1 nf=2
         mp14 vop vip_o vccx vccx p w=360e-9 m=1 nf=2
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def ota_six(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} ibias vccx vssx  von vin vip
         //mn1 ibias ibias vssx vssx n w=360e-9 nf=2 m=1
         mn1 ibias ibias vssx vssx n w=360e-9 nf=2 m=8
@@ -35,32 +38,38 @@ def ota_six(name):
         mp5 vop vop vccx vccx p w=360e-9 nf=2 m=4
         mp6 von vop vccx vccx p w=360e-9 nf=2 m=4
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def common_source(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} vin vop vccx vssx
         mp0 vop vop vccx vccx p w=720e-9 nf=4 m=4
         mn0 vop vin vssx vssx n w=720e-9 nf=4 m=4
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def common_source_mini(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} vin vop vccx vssx
         mp0 vop vop vccx vccx p w=360e-9 nf=2 m=1
         mn0 vop vin vssx vssx n w=360e-9 nf=2 m=1
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def tia(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt pcell_mos d g s b
         M0 d g s b n w=720e-9 nf=4 m=4
         .ends pcell_mos
@@ -73,12 +82,14 @@ def tia(name):
         xi0 vin vop pcell_tfr_0
         xi1 vin vop vssx vssx pcell_mos
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def ldo_amp(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} vbias_an vccx vfb vg v1 vref vssx vbias_bf en
         xmn56 vbias6 vbias_bf vssx vssx n nfin=4 stack=4 m=4
         xmn20 v5 v4 vssx vssx n nfin=4 stack=2 m=8
@@ -111,12 +122,14 @@ def ldo_amp(name):
         mn322 vg v3_d vssx vssx n w=720e-9 m=1 nf=4
         mn42 vbias3 vbias3 vbias4 vssx n w=1.44e-6 m=2 nf=8
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def ldo_amp_simple(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} vbias_an vbias_bf vccx vfb vg vref vssx
         * biasing
         mp5 vbias1 vbias1 vccx vccx p w=360e-9 nf=2
@@ -148,12 +161,14 @@ def ldo_amp_simple(name):
         mp32 vg vg vccx vccx p w=360e-9 nf=2
         mn31 vg v3_d vssx vssx n w=360e-9 nf=2
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def ro_simple(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt ro_stage vi vo vccx vssx
         mp0 vo vi vccx vccx p w=360e-9 m=1 nf=2
         mn0 vo vi vssx vssx n w=360e-9 m=1 nf=2
@@ -165,12 +180,14 @@ def ro_simple(name):
         xi3 v3 v4 vccx vssx ro_stage
         xi4 v4 vo vccx vssx ro_stage
         .ends {name}
-    """)
+    """
+    )
     return netlist
 
 
 def two_stage_ota_differential(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
         .subckt p_s_pcell_3 d g s b
         .param m=1
         mi2 inet1 g s b p w=180e-9 m=1 nf=1
@@ -222,29 +239,35 @@ def two_stage_ota_differential(name):
         xmn0 vy vinn net023 vssx n_s_pcell_8 m=10
         .ends {name}
         .END
-    """)
+    """
+    )
     return netlist
 
 
 def charge_pump_switch(name, size=16):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt switch ng pg t1 t2 vccx vssx
     qp0 t1 pg t2 vccx p m=1 nf=2 w=90e-9
     qn0 t1 ng t2 vssx n m=1 nf=2 w=90e-9
     .ends
     .subckt {name} en enb in out vccx vssx
-    """)
+    """
+    )
     for i in range(size):
         netlist += f"isw<{i}> en enb in out vccx vssx switch\n"
-    netlist += textwrap.dedent(f"""\
+    netlist += textwrap.dedent(
+        f"""\
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist
 
 
 def niwc_opamp_split(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt {name} vtail vbn vbp1 vbp2 vin vip out vccx vssx
     m1 cas1 vin tail vssx n w=360e-9 m=8 nf=1 stack=4
     m2 cas2 vip tail vssx n w=360e-9 m=8 nf=1 stack=4
@@ -265,12 +288,14 @@ def niwc_opamp_split(name):
     m12 cas2 vbp2 vccx vccx p w=360e-9 m=32 nf=1 stack=8
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist
 
 
 def opamp_poor(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt ps4 d g s b
     .param m=1
     i0 d0 g s  b p m=1 w=180e-9 m=1 nf=1
@@ -315,12 +340,14 @@ def opamp_poor(name):
     i1 fbout ibias vssx vssx cascode_n
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist
 
 
 def comparator_analog(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt {name} vminus vplus vout en vccx vssx
     invp1 enn en  vccx vccx p m=1 nf=2 w=180e-9
     invn1 enn en  vssx vssx n m=1 nf=2 w=180e-9
@@ -345,12 +372,14 @@ def comparator_analog(name):
     sw_pulldn_en1 vo1p  enn vssx vssx n stack=4 m=2 nf=1 w=360e-9
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist
 
 
 def analog_mux_4to1(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt dig22inv a o1 vccx vssx
     .ends
     .subckt dig22nand a b o1 vccx vssx
@@ -379,12 +408,14 @@ def analog_mux_4to1(name):
     pg3 net1 net2 in3 muxout vccx vssx passgate
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist
 
 
 def folded_cascode(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt {name} ina inb icm icsl outb vccx vssx
 
     qp5<0> casp casp vccx vccx p stack=2 m=4 nf=1 w=360e-9
@@ -408,12 +439,14 @@ def folded_cascode(name):
 
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist
 
 
 def bias_generator(name):
-    netlist = textwrap.dedent(f"""\
+    netlist = textwrap.dedent(
+        f"""\
     .subckt dig22nand a b o1 vccd vssx
     .ends
     .subckt dig22inv a o1 vccd vssx
@@ -496,5 +529,6 @@ def bias_generator(name):
     i32 i_incsl_n net6 vcca vssx pbias_gen
     .ends {name}
     .END
-    """)
+    """
+    )
     return netlist

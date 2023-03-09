@@ -5,7 +5,6 @@ from .types import List, Union, set_context
 
 
 class Library(List[Union[Model, SubCircuit]]):
-
     def __init__(self, loadbuiltins=False, pdk_models=None):
         super().__init__()
         models = None
@@ -22,75 +21,67 @@ class Library(List[Union[Model, SubCircuit]]):
         return next((x for x in self if x.name == name.upper()), None)
 
     def append(self, item):
-        assert not self.find(item.name), f'Duplicate model/subcircuit name {item.name} New: {item}, Existing: {self.find(item.name)}'
+        assert not self.find(
+            item.name
+        ), f"Duplicate model/subcircuit name {item.name} New: {item}, Existing: {self.find(item.name)}"
         self.__root__.append(item)
 
     def default_models(self):
         models = list()
         models.append(
             Model(
-                name='NMOS',
-                pins=['D', 'G', 'S', 'B'],
+                name="NMOS",
+                pins=["D", "G", "S", "B"],
                 parameters={
-                    'W': 0,
-                    'L': 0,
-                    'NFIN': 1,
-                    'NF': 2,
-                    'M': 1,
-                    'PARALLEL': 1,  # Internal attribute used for parallel and stacked devices
-                    'STACK': 1},
-                prefix=''
-            )
-        )
-        models.append(
-            Model(
-                name='PMOS',
-                pins=['D', 'G', 'S', 'B'],
-                parameters={
-                    'W': 0,
-                    'L': 0,
-                    'NFIN': 1,
-                    'NF': 2,
-                    'M': 1,
-                    'PARALLEL': 1,  # Internal attribute used for parallel and stacked devices
-                    'STACK': 1},
-                prefix=''
-            )
-        )
-        models.append(
-            Model(
-                name='CAP',
-                pins=['PLUS', 'MINUS'],
-                parameters={
-                    'VALUE': 0,
-                    'PARALLEL': 1,
-                    'STACK': 1
+                    "W": 0,
+                    "L": 0,
+                    "NFIN": 1,
+                    "NF": 2,
+                    "M": 1,
+                    "PARALLEL": 1,  # Internal attribute used for parallel and stacked devices
+                    "STACK": 1,
                 },
-                prefix='C'
+                prefix="",
             )
         )
         models.append(
             Model(
-                name='RES',
-                pins=['PLUS', 'MINUS'],
+                name="PMOS",
+                pins=["D", "G", "S", "B"],
                 parameters={
-                    'VALUE': 0,
-                    'PARALLEL': 1,
-                    'STACK': 1
+                    "W": 0,
+                    "L": 0,
+                    "NFIN": 1,
+                    "NF": 2,
+                    "M": 1,
+                    "PARALLEL": 1,  # Internal attribute used for parallel and stacked devices
+                    "STACK": 1,
                 },
-                prefix='R'
+                prefix="",
             )
         )
         models.append(
             Model(
-                name='IND',
-                pins=['PLUS', 'MINUS'],
-                parameters={
-                    'VALUE': 0,
-                    'PARALLEL': 1,
-                    'STACK': 1
-                },
-                prefix='L'
+                name="CAP",
+                pins=["PLUS", "MINUS"],
+                parameters={"VALUE": 0, "PARALLEL": 1, "STACK": 1},
+                prefix="C",
+            )
+        )
+        models.append(
+            Model(
+                name="RES",
+                pins=["PLUS", "MINUS"],
+                parameters={"VALUE": 0, "PARALLEL": 1, "STACK": 1},
+                prefix="R",
+            )
+        )
+        models.append(
+            Model(
+                name="IND",
+                pins=["PLUS", "MINUS"],
+                parameters={"VALUE": 0, "PARALLEL": 1, "STACK": 1},
+                prefix="L",
             )
         )
         return models
@@ -102,8 +93,10 @@ def read_lib_json(json_file_path):
     library = Library(loadbuiltins=False)
     with set_context(library):
         for x in data:
-            if 'generator' in x:
+            if "generator" in x:
                 library.append(SubCircuit(**{k: v for k, v in x.items() if v}))
             else:
-                library.append(Model(**{k: v for k, v in x.items() if v and not k=='base'}))
+                library.append(
+                    Model(**{k: v for k, v in x.items() if v and not k == "base"})
+                )
     return library

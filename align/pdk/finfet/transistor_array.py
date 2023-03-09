@@ -10,14 +10,14 @@ from .gen_param import construct_sizes_from_exact_patterns
 from align.schema.constraint import PlaceOnGrid, OffsetsScalings
 
 import logging
+
 logger = logging.getLogger(__name__)
 logger_func = logger.debug
 
 
 class MOSGenerator(CanvasPDK):
-
     def __init__(self, *args, **kwargs):
-        self.primitive_constraints = kwargs.get('primitive_constraints', [])
+        self.primitive_constraints = kwargs.get("primitive_constraints", [])
 
         super().__init__()
 
@@ -29,50 +29,69 @@ class MOSGenerator(CanvasPDK):
         self.add_tap = True
         self.place_on_grid = None
         for const in self.primitive_constraints:
-            if const.constraint == 'Generator':
+            if const.constraint == "Generator":
                 if const.parameters is not None:
-                    self.pattern_template = const.parameters.get('pattern_template')
-                    self.PARTIAL_ROUTING = const.parameters.get('PARTIAL_ROUTING', False)
-                    self.single_device_connect_m1 = const.parameters.get('single_device_connect_m1', True)
-                    self.exact_patterns = const.parameters.get('exact_patterns')
-                    self.add_tap = const.parameters.get('add_tap', True)
-                    self.place_on_grid = const.parameters.get('place_on_grid', False)
+                    self.pattern_template = const.parameters.get("pattern_template")
+                    self.PARTIAL_ROUTING = const.parameters.get(
+                        "PARTIAL_ROUTING", False
+                    )
+                    self.single_device_connect_m1 = const.parameters.get(
+                        "single_device_connect_m1", True
+                    )
+                    self.exact_patterns = const.parameters.get("exact_patterns")
+                    self.add_tap = const.parameters.get("add_tap", True)
+                    self.place_on_grid = const.parameters.get("place_on_grid", False)
                     if self.exact_patterns is not None:
-                        self.exact_patterns_d = construct_sizes_from_exact_patterns(self.exact_patterns)
+                        self.exact_patterns_d = construct_sizes_from_exact_patterns(
+                            self.exact_patterns
+                        )
 
-                    legal_keys = set(['pattern_template', 'PARTIAL_ROUTING', 'single_device_connect_m1', 'exact_patterns', 'legal_sizes',
-                                      'add_tap', 'place_on_grid'])
+                    legal_keys = set(
+                        [
+                            "pattern_template",
+                            "PARTIAL_ROUTING",
+                            "single_device_connect_m1",
+                            "exact_patterns",
+                            "legal_sizes",
+                            "add_tap",
+                            "place_on_grid",
+                        ]
+                    )
                     for k in const.parameters.keys():
                         assert k in legal_keys, (k, legal_keys)
 
-        if os.getenv('ALIGN_DISABLE_TAP', None) is not None:
+        if os.getenv("ALIGN_DISABLE_TAP", None) is not None:
             self.add_tap = False
             logger_func(f"Tap insertion is disabled")
 
-        if os.getenv('PARTIAL_ROUTING', None) is not None:
+        if os.getenv("PARTIAL_ROUTING", None) is not None:
             self.PARTIAL_ROUTING = True
 
         # logger.info(f'pattern_template: {self.pattern_template} PARTIAL_ROUTING: {self.PARTIAL_ROUTING} single_device_connect_m1: {self.single_device_connect_m1}')
 
         if self.PARTIAL_ROUTING:
-            if not hasattr(self, 'metadata'):
+            if not hasattr(self, "metadata"):
                 self.metadata = dict()
-            self.metadata['partially_routed_pins'] = {}
+            self.metadata["partially_routed_pins"] = {}
 
         # Inject constraints for testing purposes
-        place_on_grid = os.getenv('PLACE_ON_GRID', None)
+        place_on_grid = os.getenv("PLACE_ON_GRID", None)
         if place_on_grid is not None:
             place_on_grid = json.loads(place_on_grid)
         elif self.place_on_grid:
-            row_height = 7*self.pdk['M2']['Pitch']
+            row_height = 7 * self.pdk["M2"]["Pitch"]
             place_on_grid = dict()
-            place_on_grid['constraints'] = [
-                PlaceOnGrid(direction='H', pitch=2*row_height, ored_terms=[OffsetsScalings(offsets=[0], scalings=[1, -1])]).dict()
-                ]
+            place_on_grid["constraints"] = [
+                PlaceOnGrid(
+                    direction="H",
+                    pitch=2 * row_height,
+                    ored_terms=[OffsetsScalings(offsets=[0], scalings=[1, -1])],
+                ).dict()
+            ]
         if place_on_grid is not None:
-            if not hasattr(self, 'metadata'):
+            if not hasattr(self, "metadata"):
                 self.metadata = dict()
-            self.metadata['constraints'] = place_on_grid['constraints']
+            self.metadata["constraints"] = place_on_grid["constraints"]
 
     def addNMOSArray(self, x_cells, y_cells, pattern, vt_type, ports, **parameters):
         self.addMOSArray(x_cells, y_cells, pattern, vt_type, ports, **parameters)
@@ -82,58 +101,77 @@ class MOSGenerator(CanvasPDK):
 
     def addMOSArray(self, x_cells, y_cells, pattern, vt_type, ports, **parameters):
 
-        logger_func(f'x_cells={x_cells}, y_cells={y_cells}, pattern={pattern}, ports={ports}, parameters={parameters}')
+        logger_func(
+            f"x_cells={x_cells}, y_cells={y_cells}, pattern={pattern}, ports={ports}, parameters={parameters}"
+        )
 
-        parameters = {k.lower(): v for k, v in parameters.items()}  # Revert all parameters to lower case
+        parameters = {
+            k.lower(): v for k, v in parameters.items()
+        }  # Revert all parameters to lower case
 
-        if parameters.get("drain", "sig") != "sig" or parameters.get("source", "sig") != "sig":
+        if (
+            parameters.get("drain", "sig") != "sig"
+            or parameters.get("source", "sig") != "sig"
+        ):
             logger_func(f"Primitive is connected to power grid")
             if self.place_on_grid is None:
-                row_height = 7*self.pdk['M2']['Pitch']
+                row_height = 7 * self.pdk["M2"]["Pitch"]
                 place_on_grid = dict()
-                place_on_grid['constraints'] = [
-                    PlaceOnGrid(direction='H', pitch=2*row_height, ored_terms=[OffsetsScalings(offsets=[0], scalings=[1, -1])]).dict()
-                    ]
-                if not hasattr(self, 'metadata'):
+                place_on_grid["constraints"] = [
+                    PlaceOnGrid(
+                        direction="H",
+                        pitch=2 * row_height,
+                        ored_terms=[OffsetsScalings(offsets=[0], scalings=[1, -1])],
+                    ).dict()
+                ]
+                if not hasattr(self, "metadata"):
                     self.metadata = dict()
-                self.metadata['constraints'] = place_on_grid['constraints']
+                self.metadata["constraints"] = place_on_grid["constraints"]
 
         #################################################################################################
-        assert pattern in {0, 1, 2}, f'This primitive cannot be generated with this PDK. Unknown pattern {pattern}'
+        assert pattern in {
+            0,
+            1,
+            2,
+        }, f"This primitive cannot be generated with this PDK. Unknown pattern {pattern}"
 
-        for key in ['m', 'real_inst_type']:
-            assert key in parameters, f'Missing transistor parameter {key}'
-        assert 'nf' or 'stack' in parameters, 'Missing transistor parameter nf or stack'
+        for key in ["m", "real_inst_type"]:
+            assert key in parameters, f"Missing transistor parameter {key}"
+        assert "nf" or "stack" in parameters, "Missing transistor parameter nf or stack"
 
-        m = int(parameters['m'])
+        m = int(parameters["m"])
 
-        if 'stack' in parameters and int(parameters['stack']) > 1:
-            nf = int(parameters['stack'])
-            device_type = 'stack'
-        elif 'nf' in parameters and int(parameters['nf']) > 1:
-            nf = int(parameters['nf'])
-            device_type = 'parallel'
+        if "stack" in parameters and int(parameters["stack"]) > 1:
+            nf = int(parameters["stack"])
+            device_type = "stack"
+        elif "nf" in parameters and int(parameters["nf"]) > 1:
+            nf = int(parameters["nf"])
+            device_type = "parallel"
         else:
-            assert False, f'Either nf>1 or stack>1 parameter should be defined {parameters}'
+            assert (
+                False
+            ), f"Either nf>1 or stack>1 parameter should be defined {parameters}"
 
-        if 'nfin' in parameters:
-            nfin = parameters['nfin']
-        elif 'w' in parameters:
-            nfin = int(float(parameters['w']) * 1e10) // self.pdk['Fin']['Pitch']
+        if "nfin" in parameters:
+            nfin = parameters["nfin"]
+        elif "w" in parameters:
+            nfin = int(float(parameters["w"]) * 1e10) // self.pdk["Fin"]["Pitch"]
             # Divide w by nf for parallel devices
-            if device_type == 'parallel':
+            if device_type == "parallel":
                 nfin = nfin // nf
         else:
-            assert False, f'Either nfin or w parameter should be defined {parameters}'
+            assert False, f"Either nfin or w parameter should be defined {parameters}"
 
-        unit_transistor = Transistor(device_type=device_type,
-                                     nf=nf,
-                                     nfin=nfin,
-                                     model_name=parameters['real_inst_type'].lower())
+        unit_transistor = Transistor(
+            device_type=device_type,
+            nf=nf,
+            nfin=nfin,
+            model_name=parameters["real_inst_type"].lower(),
+        )
 
         def find_ports(p, i):
             res = {vv: k for k, v in p.items() for kk, vv in v if kk == i}
-            logger.debug(f'find_ports: p {p} i {i} res {res}')
+            logger.debug(f"find_ports: p {p} i {i} res {res}")
             return res
 
         element_names = sorted({c[0] for mc in ports.values() for c in mc})
@@ -147,89 +185,112 @@ class MOSGenerator(CanvasPDK):
                 port_arr[2] = p2
                 mult_arr[2] = m
         self.transistor_array = TransistorArray(
-            unit_transistor=unit_transistor,
-            m=mult_arr,
-            ports=port_arr,
-            n_rows=y_cells
+            unit_transistor=unit_transistor, m=mult_arr, ports=port_arr, n_rows=y_cells
         )
         #################################################################################################
-        m = 2*m if pattern > 0 else m
+        m = 2 * m if pattern > 0 else m
         self.n_row, self.n_col = self.validate_array(m, y_cells, x_cells)
-        logger_func(f'x_cells={self.n_col}, y_cells={self.n_row} after legalization')
+        logger_func(f"x_cells={self.n_col}, y_cells={self.n_row} after legalization")
 
         if self.n_row * self.n_col != m:
-            assert False, f'x_cells {self.n_row} by y_cells {self.n_col} not equal to m {m}'
+            assert (
+                False
+            ), f"x_cells {self.n_row} by y_cells {self.n_col} not equal to m {m}"
 
         self.ports = ports
         self.mos_array()
 
         # bounding box as visual aid
-        if parameters['real_inst_type'].lower().startswith('p'):
-            self.terminals.insert(0, {'layer': 'Nwell', 'netName': None, 'netType': 'drawing', 'rect': self.bbox.toList()})
+        if parameters["real_inst_type"].lower().startswith("p"):
+            self.terminals.insert(
+                0,
+                {
+                    "layer": "Nwell",
+                    "netName": None,
+                    "netType": "drawing",
+                    "rect": self.bbox.toList(),
+                },
+            )
 
     def mos_array(self):
 
-        assert len(self.transistor_array.m) <= 2, 'Arrays of more than 2 devices not supported yet'
+        assert (
+            len(self.transistor_array.m) <= 2
+        ), "Arrays of more than 2 devices not supported yet"
 
         is_dual = len(self.transistor_array.m) == 2
-        tap_map = {'B': self.transistor_array.ports[1].get('B','B')}
+        tap_map = {"B": self.transistor_array.ports[1].get("B", "B")}
 
-
-        '''
+        """
             if PARTIAL_ROUTING:
                 route single transistor primitives up to m1 excluding gate
                 route double transistor primitives up to m2
-        '''
+        """
 
         # Assign M2 tracks to prevent adjacent V2 violation
-        track_pattern_1 = {'G': [6], 'S': [4], 'D': [2]}
-        track_pattern_2 = {'G': [5], 'S': [3], 'D': [1]}
+        track_pattern_1 = {"G": [6], "S": [4], "D": [2]}
+        track_pattern_2 = {"G": [5], "S": [3], "D": [1]}
 
         if is_dual:
-            for tgt, srcs in [('G',['G','S']),('S',['S','D']),('D',['D'])]:
+            for tgt, srcs in [("G", ["G", "S"]), ("S", ["S", "D"]), ("D", ["D"])]:
                 for src in srcs:
-                    if self.transistor_array.ports[2][tgt] == self.transistor_array.ports[1][src]:
+                    if (
+                        self.transistor_array.ports[2][tgt]
+                        == self.transistor_array.ports[1][src]
+                    ):
                         track_pattern_2[tgt] = track_pattern_1[src]
                         break
 
             # Alternate m2 tracks for device A and device B for improved matching
-            tx_2 = MOS().mos(self.transistor_array.unit_transistor, track_pattern=track_pattern_2)
+            tx_2 = MOS().mos(
+                self.transistor_array.unit_transistor, track_pattern=track_pattern_2
+            )
         elif self.PARTIAL_ROUTING:
             if self.single_device_connect_m1:
-                track_pattern_1 = {'G': [6]}
+                track_pattern_1 = {"G": [6]}
 
-        tx_1 = MOS().mos(self.transistor_array.unit_transistor, track_pattern=track_pattern_1)
-
+        tx_1 = MOS().mos(
+            self.transistor_array.unit_transistor, track_pattern=track_pattern_1
+        )
 
         tp = MOS().tap(self.transistor_array.unit_transistor)
         fill = MOS().fill(1, self.transistor_array.unit_transistor.nfin)
 
-
         # Define the interleaving array (aka array logic)
         if is_dual:
             if self.exact_patterns_d is not None:
-                k = self.n_col//2, self.n_row
+                k = self.n_col // 2, self.n_row
                 assert k in self.exact_patterns_d, (k, self.exact_patterns_d)
-                interleave_array = self.interleave_pattern(self.n_row, self.n_col, pattern_template=self.exact_patterns_d[k])
+                interleave_array = self.interleave_pattern(
+                    self.n_row, self.n_col, pattern_template=self.exact_patterns_d[k]
+                )
             elif self.pattern_template is not None:
-                interleave_array = self.interleave_pattern(self.n_row, self.n_col, pattern_template=self.pattern_template)
+                interleave_array = self.interleave_pattern(
+                    self.n_row, self.n_col, pattern_template=self.pattern_template
+                )
             else:
                 interleave_array = self.interleave_pattern(self.n_row, self.n_col)
         else:
             if self.exact_patterns_d is not None:
                 k = self.n_col, self.n_row
                 assert k in self.exact_patterns_d, (k, self.exact_patterns_d)
-                interleave_array = self.interleave_pattern(self.n_row, self.n_col, pattern_template=self.exact_patterns_d[k])
+                interleave_array = self.interleave_pattern(
+                    self.n_row, self.n_col, pattern_template=self.exact_patterns_d[k]
+                )
             elif self.pattern_template is not None:
-                interleave_array = self.interleave_pattern(self.n_row, self.n_col, pattern_template=self.pattern_template)
+                interleave_array = self.interleave_pattern(
+                    self.n_row, self.n_col, pattern_template=self.pattern_template
+                )
             else:
-                interleave_array = self.interleave_pattern(self.n_row, self.n_col, pattern_template=["A"])
-
+                interleave_array = self.interleave_pattern(
+                    self.n_row, self.n_col, pattern_template=["A"]
+                )
 
         cnt_obj = 0
+
         def add_obj(row, obj, tbl, flip_x):
             nonlocal cnt_obj
-            row.append([obj, f't{cnt_obj}', tbl, flip_x])
+            row.append([obj, f"t{cnt_obj}", tbl, flip_x])
             cnt_obj += 1
 
         rows = []
@@ -243,10 +304,7 @@ class MOSGenerator(CanvasPDK):
             rows.append(row)
             add_obj(row, fill, {}, 1)
 
-        tr = {'A': (1,  1),
-              'a': (1, -1),
-              'B': (2,  1),
-              'b': (2, -1)}
+        tr = {"A": (1, 1), "a": (1, -1), "B": (2, 1), "b": (2, -1)}
 
         for y in range(self.n_row):
             row = []
@@ -263,8 +321,8 @@ class MOSGenerator(CanvasPDK):
                     else:
                         tx = tx_1 if y % 2 == 0 else tx_2
 
-                #row.append([tx, f'm{y*self.n_col+x}', pin_map, flip_x])
-                row.append([tx, f'm{y}_{x}', pin_map, flip_x])
+                # row.append([tx, f'm{y*self.n_col+x}', pin_map, flip_x])
+                row.append([tx, f"m{y}_{x}", pin_map, flip_x])
 
             add_obj(row, fill, {}, 1)
             rows.append(row)
@@ -287,64 +345,85 @@ class MOSGenerator(CanvasPDK):
             for net_name, open_groups in self.rd.opens:
                 for open_group in open_groups:
                     counters[net_name] += 1
-                    new_name = f'{net_name}__{counters[net_name]}'
-                    assert 'partially_routed_pins' in self.metadata
-                    self.metadata['partially_routed_pins'][new_name] = net_name
+                    new_name = f"{net_name}__{counters[net_name]}"
+                    assert "partially_routed_pins" in self.metadata
+                    self.metadata["partially_routed_pins"][new_name] = net_name
                     for layer, rect in open_group:
                         replacements[(layer, tuple(rect))] = new_name
 
             for term in self.terminals:
-                new_name = replacements.get((term['layer'], tuple(term['rect'])))
+                new_name = replacements.get((term["layer"], tuple(term["rect"])))
                 if new_name is not None:
-                    term.update({'netName': new_name, 'netType': 'pin'})
+                    term.update({"netName": new_name, "netType": "pin"})
 
             # Expose pins
             self._expose_pins()
 
     def stamp_cell(self, template, instance_name, pin_map, x_offset, y_offset, flip_x):
 
-        bbox = template['bbox']
+        bbox = template["bbox"]
 
         # bounding box as visual aid
-        t = {'layer': 'Boundary', 'netName': None, 'netType': 'drawing',
-             'rect': [bbox[0]+x_offset, bbox[1]+y_offset, bbox[2]+x_offset, bbox[3]+y_offset]}
+        t = {
+            "layer": "Boundary",
+            "netName": None,
+            "netType": "drawing",
+            "rect": [
+                bbox[0] + x_offset,
+                bbox[1] + y_offset,
+                bbox[2] + x_offset,
+                bbox[3] + y_offset,
+            ],
+        }
         self.terminals.append(t)
 
         if flip_x < 0:
             x_offset += bbox[2] - bbox[1]
 
         # append terminals
-        for term in template['terminals']:
+        for term in template["terminals"]:
             t = {}
-            r = term['rect'].copy()
+            r = term["rect"].copy()
             if flip_x < 0:
-                t['rect'] = [x_offset-r[2], r[1]+y_offset, x_offset-r[0], r[3]+y_offset]
+                t["rect"] = [
+                    x_offset - r[2],
+                    r[1] + y_offset,
+                    x_offset - r[0],
+                    r[3] + y_offset,
+                ]
             else:
-                t['rect'] = [x_offset+r[0], r[1]+y_offset, x_offset+r[2], r[3]+y_offset]
+                t["rect"] = [
+                    x_offset + r[0],
+                    r[1] + y_offset,
+                    x_offset + r[2],
+                    r[3] + y_offset,
+                ]
 
-            t['layer'] = term['layer']
-            t['netName'] = pin_map.get(term['netName'], None)
-            t['netType'] = term['netType']
+            t["layer"] = term["layer"]
+            t["netName"] = pin_map.get(term["netName"], None)
+            t["netType"] = term["netType"]
             self.terminals.append(t)
 
     def place(self, rows):
         x_offset = 0
         y_offset = 0
 
-        x_offset += 0*self.pdk['Poly']['Pitch']  # whitespace for feol rules
+        x_offset += 0 * self.pdk["Poly"]["Pitch"]  # whitespace for feol rules
 
         for row in rows:
             x_offset = 0
             for device in row:
                 [cell, instance_name, pin_map, flip_x] = device
-                self.stamp_cell(cell, instance_name, pin_map, x_offset, y_offset, flip_x)
-                x_offset += cell['bbox'][2] - cell['bbox'][0]
-            y_offset += cell['bbox'][3] - cell['bbox'][1]
+                self.stamp_cell(
+                    cell, instance_name, pin_map, x_offset, y_offset, flip_x
+                )
+                x_offset += cell["bbox"][2] - cell["bbox"][0]
+            y_offset += cell["bbox"][3] - cell["bbox"][1]
 
-        x_offset += 0*self.pdk['Poly']['Pitch']  # whitespace for feol rules
+        x_offset += 0 * self.pdk["Poly"]["Pitch"]  # whitespace for feol rules
 
         self.bbox = transformation.Rect(*[0, 0, x_offset, y_offset])
-        logger_func(f'bounding box: {self.bbox}')
+        logger_func(f"bounding box: {self.bbox}")
 
     def route(self):
         self.join_wires(self.m1)
@@ -354,17 +433,17 @@ class MOSGenerator(CanvasPDK):
             x_min = self.bbox.urx
             x_max = self.bbox.lly
             for term in self.terminals:
-                if term['layer'] == self.m2.layer:
-                    if term['rect'][0] < x_min:
-                        x_min = term['rect'][0]
-                    if term['rect'][2] > x_max:
-                        x_max = term['rect'][2]
+                if term["layer"] == self.m2.layer:
+                    if term["rect"][0] < x_min:
+                        x_min = term["rect"][0]
+                    if term["rect"][2] > x_max:
+                        x_max = term["rect"][2]
             for term in self.terminals:
-                if term['layer'] == self.m2.layer:
-                    if term['rect'][0] > x_min:
-                        term['rect'][0] = x_min
-                    if term['rect'][2] < x_max:
-                        term['rect'][2] = x_max
+                if term["layer"] == self.m2.layer:
+                    if term["rect"][0] > x_min:
+                        term["rect"][0] = x_min
+                    if term["rect"][2] < x_max:
+                        term["rect"][2] = x_max
 
         # M3
         self.terminals = self.removeDuplicates(silence_errors=True)
@@ -373,19 +452,19 @@ class MOSGenerator(CanvasPDK):
             for t in self.rd.opens:
                 open_pins.add(t[0])
 
-            x_mid = (self.bbox.llx + self.bbox.urx)//2
+            x_mid = (self.bbox.llx + self.bbox.urx) // 2
             (c_idx, _) = self.m3.clg.inverseBounds(x_mid)
-            c_idx = c_idx[0] - len(open_pins)//2
+            c_idx = c_idx[0] - len(open_pins) // 2
 
             def _find_y_bounds(pin, wire):
                 y_min = self.bbox.ury
                 y_max = self.bbox.lly
                 for term in self.terminals:
-                    if term['layer'] == wire.layer and term['netName'] in pin:
-                        if term['rect'][1] < y_min:
-                            y_min = term['rect'][1]
-                        if term['rect'][3] > y_max:
-                            y_max = term['rect'][3]
+                    if term["layer"] == wire.layer and term["netName"] in pin:
+                        if term["rect"][1] < y_min:
+                            y_min = term["rect"][1]
+                        if term["rect"][3] > y_max:
+                            y_max = term["rect"][3]
                 return y_min, y_max
 
             y_min, y_max = _find_y_bounds(open_pins, self.m2)
@@ -395,7 +474,7 @@ class MOSGenerator(CanvasPDK):
                 (b1, b2) = self.m3.spg.inverseBounds(y_min)
                 (e1, e2) = self.m3.spg.inverseBounds(y_max)
                 if b1[0] + 1 == e2[0]:
-                    b1 = (b1[0]-1, b1[1])  # Satisfy min length
+                    b1 = (b1[0] - 1, b1[1])  # Satisfy min length
                 self.addWire(self.m3, pin, c_idx, b1, e2)
                 c_idx += 1
 
@@ -409,26 +488,26 @@ class MOSGenerator(CanvasPDK):
         if False:
             # Expose pins
             for term in self.terminals:
-                if term['netName'] is not None and term['layer'] in ['M2', 'M3']:
-                    term['netType'] = 'pin'
+                if term["netName"] is not None and term["layer"] in ["M2", "M3"]:
+                    term["netType"] = "pin"
         else:
             self._expose_pins()
 
     def _expose_pins(self):
         net_layers = defaultdict(set)
         for term in self.terminals:
-            if term['netName'] is not None and term['layer'].startswith('M'):
-                net_layers[term['netName']].add(term['layer'])
+            if term["netName"] is not None and term["layer"].startswith("M"):
+                net_layers[term["netName"]].add(term["layer"])
 
         for name, layers in net_layers.items():
             max_layer = max(layers)
             for term in self.terminals:
-                nm, ly = term['netName'], term['layer']
+                nm, ly = term["netName"], term["layer"]
                 if nm is not None and nm == name:
                     if ly == max_layer:
-                        term['netType'] = 'pin'
+                        term["netType"] = "pin"
                     else:
-                        term['netType'] = 'drawing'
+                        term["netType"] = "drawing"
 
     @staticmethod
     def validate_array(m, n_row, n_col):
@@ -443,11 +522,10 @@ class MOSGenerator(CanvasPDK):
                 if y == 1:
                     return 1, m
                 elif m % y == 0:
-                    return y, m//y
-
+                    return y, m // y
 
     @staticmethod
-    def interleave_pattern(n_row, n_col, *, pattern_template=["AB","BA"]):
+    def interleave_pattern(n_row, n_col, *, pattern_template=["AB", "BA"]):
         """
         (lower case means flipped around the y-axis (mirrored in x))
             A B
@@ -460,4 +538,7 @@ class MOSGenerator(CanvasPDK):
             B a A b
         """
         assert len(pattern_template) > 0
-        return [list(islice(cycle(pattern_template[y%len(pattern_template)]), n_col)) for y in range(n_row)]
+        return [
+            list(islice(cycle(pattern_template[y % len(pattern_template)]), n_col))
+            for y in range(n_row)
+        ]

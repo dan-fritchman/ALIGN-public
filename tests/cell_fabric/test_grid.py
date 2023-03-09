@@ -8,13 +8,25 @@ def test_inverseBounds():
 
     c = Canvas()
 
-    c.M1 = c.addGen(Wire(nm='m1', layer='M1', direction='v',
-                         clg=UncoloredCenterLineGrid(width=400, pitch=800),
-                         spg=EnclosureGrid(pitch=800, stoppoint=200)))
+    c.M1 = c.addGen(
+        Wire(
+            nm="m1",
+            layer="M1",
+            direction="v",
+            clg=UncoloredCenterLineGrid(width=400, pitch=800),
+            spg=EnclosureGrid(pitch=800, stoppoint=200),
+        )
+    )
 
-    c.M2 = c.addGen(Wire(nm='m2', layer='M2', direction='h',
-                         clg=UncoloredCenterLineGrid(width=400, pitch=800),
-                         spg=EnclosureGrid(pitch=800, stoppoint=600)))
+    c.M2 = c.addGen(
+        Wire(
+            nm="m2",
+            layer="M2",
+            direction="h",
+            clg=UncoloredCenterLineGrid(width=400, pitch=800),
+            spg=EnclosureGrid(pitch=800, stoppoint=600),
+        )
+    )
 
     # M1 is monotonic
     b, e = c.M1.spg.inverseBounds(600)

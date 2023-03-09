@@ -16,19 +16,19 @@ def enumerate_sequence_pairs(constraints, instance_map: dict, max_sequences: int
     for constraint in constraint_schema.expand_user_constraints(constraints):
         if isinstance(constraint, constraint_schema.Order):
             for i0, i1 in more_itertools.pairwise(constraint.instances):
-                if constraint.direction == 'left_to_right':    # (before,before)
+                if constraint.direction == "left_to_right":  # (before,before)
                     pos_graph.add_edge(instance_map[i0], instance_map[i1])
                     neg_graph.add_edge(instance_map[i0], instance_map[i1])
 
-                elif constraint.direction == 'right_to_left':  # (after, after)
+                elif constraint.direction == "right_to_left":  # (after, after)
                     pos_graph.add_edge(instance_map[i1], instance_map[i0])
                     neg_graph.add_edge(instance_map[i1], instance_map[i0])
 
-                elif constraint.direction == 'bottom_to_top':  # (after, before)
+                elif constraint.direction == "bottom_to_top":  # (after, before)
                     pos_graph.add_edge(instance_map[i1], instance_map[i0])
                     neg_graph.add_edge(instance_map[i0], instance_map[i1])
 
-                elif constraint.direction == 'top_to_bottom':  # (before, after)
+                elif constraint.direction == "top_to_bottom":  # (before, after)
                     pos_graph.add_edge(instance_map[i0], instance_map[i1])
                     neg_graph.add_edge(instance_map[i1], instance_map[i0])
                 else:
@@ -49,7 +49,9 @@ def enumerate_sequence_pairs(constraints, instance_map: dict, max_sequences: int
     return sequence_pairs
 
 
-def enumerate_variants(constraints, instance_map: dict, variant_counts: dict, max_variants: int):
+def enumerate_variants(
+    constraints, instance_map: dict, variant_counts: dict, max_variants: int
+):
 
     # Group instances that should use the same concrete template
     groups = list()
@@ -82,7 +84,7 @@ def enumerate_variants(constraints, instance_map: dict, variant_counts: dict, ma
     count = 1
     variants = list()
     for variant in itertools.product(*group_variants):
-        selection = [0]*len(instance_map)
+        selection = [0] * len(instance_map)
         for i, v in enumerate(variant):
             # Assign variant v to all instances of i^th group
             for instance in groups[i]:
@@ -101,14 +103,20 @@ from align.schema.types import set_context
 def initialize_constraints(n):
     library = Library()
     with set_context(library):
-        model = Model(name='TwoTerminalDevice', pins=['A', 'B'], parameters={})
+        model = Model(name="TwoTerminalDevice", pins=["A", "B"], parameters={})
         library.append(model)
-        subckt = SubCircuit(name='SUBCKT', pins=['PIN1', 'PIN2'], parameters={})
+        subckt = SubCircuit(name="SUBCKT", pins=["PIN1", "PIN2"], parameters={})
         library.append(subckt)
     with set_context(subckt.elements):
         for i in range(n):
-            subckt.elements.append(Instance(name=f'M{i}', model='TwoTerminalDevice', pins={'A': 'PIN1', 'B': 'PIN2'}))
-    instance_map = {f'M{i}': i for i in range(n)}
+            subckt.elements.append(
+                Instance(
+                    name=f"M{i}",
+                    model="TwoTerminalDevice",
+                    pins={"A": "PIN1", "B": "PIN2"},
+                )
+            )
+    instance_map = {f"M{i}": i for i in range(n)}
     return subckt.constraints, instance_map
 
 
@@ -128,14 +136,22 @@ def test_enumerate_sequence_pairs():
 
     constraints, instance_map = initialize_constraints(4)
     with set_context(constraints):
-        constraints.append(constraint_schema.Order(direction='left_to_right', instances=[f'M{i}' for i in range(4)]))
+        constraints.append(
+            constraint_schema.Order(
+                direction="left_to_right", instances=[f"M{i}" for i in range(4)]
+            )
+        )
     sequence_pairs = enumerate_sequence_pairs(constraints, instance_map, 1000)
     assert len(sequence_pairs) == 1
     assert sequence_pairs[0] == ([0, 1, 2, 3], [0, 1, 2, 3])
 
     constraints, instance_map = initialize_constraints(4)
     with set_context(constraints):
-        constraints.append(constraint_schema.Order(direction='top_to_bottom', instances=[f'M{i}' for i in range(4)]))
+        constraints.append(
+            constraint_schema.Order(
+                direction="top_to_bottom", instances=[f"M{i}" for i in range(4)]
+            )
+        )
     sequence_pairs = enumerate_sequence_pairs(constraints, instance_map, 1000)
     assert len(sequence_pairs) == 1
     assert sequence_pairs[0] == ([0, 1, 2, 3], [3, 2, 1, 0])
@@ -151,10 +167,12 @@ def test_enumerate_variants():
     constraints, instance_map = initialize_constraints(4)
     variant_counts = {k: 2 for k in instance_map.keys()}
     with set_context(constraints):
-        constraints.append(constraint_schema.SameTemplate(instances=[f'M{i}' for i in range(4)]))
+        constraints.append(
+            constraint_schema.SameTemplate(instances=[f"M{i}" for i in range(4)])
+        )
     variants = enumerate_variants(constraints, instance_map, variant_counts, 100)
     assert len(variants) == 2
-    assert variants == [[0]*4, [1]*4]
+    assert variants == [[0] * 4, [1] * 4]
 
     constraints, instance_map = initialize_constraints(4)
     variant_counts = {k: 3 for k in instance_map.keys()}
@@ -162,4 +180,4 @@ def test_enumerate_variants():
         constraints.append(constraint_schema.SameTemplate(instances=["M1", "M2"]))
         constraints.append(constraint_schema.SameTemplate(instances=["M2", "M3"]))
     variants = enumerate_variants(constraints, instance_map, variant_counts, 100)
-    assert len(variants) == 3*3
+    assert len(variants) == 3 * 3

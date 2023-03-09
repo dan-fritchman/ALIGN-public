@@ -1,26 +1,33 @@
 import json
 import pathlib
 
-from align.pnr.hpwl import gen_netlist, calculate_HPWL_from_placement_verilog_d, Interval, SemiPerimeter
+from align.pnr.hpwl import (
+    gen_netlist,
+    calculate_HPWL_from_placement_verilog_d,
+    Interval,
+    SemiPerimeter,
+)
 from align.pnr.render_placement import standalone_overlap_checker
+
 
 def test_interval():
     i = Interval()
-    i.add( 7)
+    i.add(7)
 
     assert 0 == i.dist()
 
-    i.add( 3)
+    i.add(3)
 
     assert 4 == i.dist()
 
+
 def test_semiperimeter():
     sp = SemiPerimeter()
-    sp.addPoint( (3,7))
+    sp.addPoint((3, 7))
 
     assert 0 == sp.dist()
 
-    sp.addRect( (10,10,12,12))
+    sp.addRect((10, 10, 12, 12))
 
     assert 14 == sp.dist()
 
@@ -29,154 +36,173 @@ def test_gen_netlist1():
     placement_verilog_d = {
         "global_signals": [],
         "modules": [
-            { "abstract_name": "top",
-              "concrete_name": "top",
-              "bbox": [0,0,100,100],
-              "parameters": [],
-              "instances": [
-                  {
-                      "abstract_template_name": "a",
-                      "concrete_template_name": "a",
-                      "instance_name": "u0",
-                      "transformation": { "oX": 0, "oY": 0, "sX": 1, "sY": 1},
-                      "fa_map": [{"formal": "x", "actual": "y"}]
-                  },
-                  {
-                      "abstract_template_name": "a",
-                      "concrete_template_name": "a",
-                      "instance_name": "u1",
-                      "transformation": { "oX": 0, "oY": 20, "sX": 1, "sY": 1},
-                      "fa_map": [{"formal": "x", "actual": "y"}]
-                  }
-              ]
-
+            {
+                "abstract_name": "top",
+                "concrete_name": "top",
+                "bbox": [0, 0, 100, 100],
+                "parameters": [],
+                "instances": [
+                    {
+                        "abstract_template_name": "a",
+                        "concrete_template_name": "a",
+                        "instance_name": "u0",
+                        "transformation": {"oX": 0, "oY": 0, "sX": 1, "sY": 1},
+                        "fa_map": [{"formal": "x", "actual": "y"}],
+                    },
+                    {
+                        "abstract_template_name": "a",
+                        "concrete_template_name": "a",
+                        "instance_name": "u1",
+                        "transformation": {"oX": 0, "oY": 20, "sX": 1, "sY": 1},
+                        "fa_map": [{"formal": "x", "actual": "y"}],
+                    },
+                ],
             }
         ],
         "leaves": [
-            { "abstract_name": "a",
-              "concrete_name": "a",
-              "bbox": [0,0,10,10],
-              "terminals": [
-                  { "name": "x",
-                    "rect": [4,4,6,6]
-                  }
-              ]
+            {
+                "abstract_name": "a",
+                "concrete_name": "a",
+                "bbox": [0, 0, 10, 10],
+                "terminals": [{"name": "x", "rect": [4, 4, 6, 6]}],
             }
-        ]
+        ],
     }
 
-    nets_d = gen_netlist( placement_verilog_d, 'top')
+    nets_d = gen_netlist(placement_verilog_d, "top")
 
-    assert 24 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d)
+    assert 24 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d
+    )
+
 
 def test_gen_netlist_flip():
     placement_verilog_d = {
         "global_signals": [],
         "modules": [
-            { "abstract_name": "top",
-              "concrete_name": "top",
-              "bbox": [0,0,100,100],
-              "parameters": [],
-              "instances": [
-                  {
-                      "abstract_template_name": "a",
-                      "concrete_template_name": "a",
-                      "instance_name": "u0",
-                      "transformation": { "oX": 0, "oY": 0, "sX": 1, "sY": 1},
-                      "fa_map": [{"formal": "x", "actual": "y"}]
-                  },
-                  {
-                      "abstract_template_name": "a",
-                      "concrete_template_name": "a",
-                      "instance_name": "u1",
-                      "transformation": { "oX": 15, "oY": 20, "sX": 1, "sY": 1},
-                      "fa_map": [{"formal": "x", "actual": "y"}]
-                  }
-              ]
-
+            {
+                "abstract_name": "top",
+                "concrete_name": "top",
+                "bbox": [0, 0, 100, 100],
+                "parameters": [],
+                "instances": [
+                    {
+                        "abstract_template_name": "a",
+                        "concrete_template_name": "a",
+                        "instance_name": "u0",
+                        "transformation": {"oX": 0, "oY": 0, "sX": 1, "sY": 1},
+                        "fa_map": [{"formal": "x", "actual": "y"}],
+                    },
+                    {
+                        "abstract_template_name": "a",
+                        "concrete_template_name": "a",
+                        "instance_name": "u1",
+                        "transformation": {"oX": 15, "oY": 20, "sX": 1, "sY": 1},
+                        "fa_map": [{"formal": "x", "actual": "y"}],
+                    },
+                ],
             }
         ],
         "leaves": [
-            { "abstract_name": "a",
-              "concrete_name": "a",
-              "bbox": [0,0,10,10],
-              "terminals": [
-                  { "name": "x",
-                    "rect": [1,2,3,4]
-                  }
-              ]
+            {
+                "abstract_name": "a",
+                "concrete_name": "a",
+                "bbox": [0, 0, 10, 10],
+                "terminals": [{"name": "x", "rect": [1, 2, 3, 4]}],
             }
-        ]
+        ],
     }
 
-    nets_d = gen_netlist( placement_verilog_d, 'top')
+    nets_d = gen_netlist(placement_verilog_d, "top")
 
-    assert 39 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d)
+    assert 39 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d
+    )
 
-    placement_verilog_d['modules'][0]['instances'][0]['transformation'] = { "oX": 10, "oY": 0, "sX": -1, "sY": 1}
-    assert 33 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d)
+    placement_verilog_d["modules"][0]["instances"][0]["transformation"] = {
+        "oX": 10,
+        "oY": 0,
+        "sX": -1,
+        "sY": 1,
+    }
+    assert 33 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d
+    )
 
-    placement_verilog_d['modules'][0]['instances'][0]['transformation'] = { "oX": 10, "oY": 10, "sX": -1, "sY": -1}
-    assert 29 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d)
+    placement_verilog_d["modules"][0]["instances"][0]["transformation"] = {
+        "oX": 10,
+        "oY": 10,
+        "sX": -1,
+        "sY": -1,
+    }
+    assert 29 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d
+    )
 
-    placement_verilog_d['modules'][0]['instances'][0]['transformation'] = { "oX": 0, "oY": 10, "sX":  1, "sY": -1}
-    assert 35 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d)
+    placement_verilog_d["modules"][0]["instances"][0]["transformation"] = {
+        "oX": 0,
+        "oY": 10,
+        "sX": 1,
+        "sY": -1,
+    }
+    assert 35 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d
+    )
 
 
 def test_gen_netlist2():
     placement_verilog_d = {
         "global_signals": [],
         "modules": [
-            { "abstract_name": "top",
-              "concrete_name": "top",
-              "bbox": [0,0,100,100],
-              "parameters": [],
-              "instances": [
-                  {
-                      "abstract_template_name": "a",
-                      "concrete_template_name": "a",
-                      "instance_name": "u0",
-                      "transformation": { "oX": 0, "oY": 0, "sX": 1, "sY": 1},
-                      "fa_map": [{"formal": "x", "actual": "y"}]
-                  },
-                  {
-                      "abstract_template_name": "a",
-                      "concrete_template_name": "a",
-                      "instance_name": "u1",
-                      "transformation": { "oX": 0, "oY": 20, "sX": 1, "sY": 1},
-                      "fa_map": [{"formal": "x", "actual": "y"}]
-                  }
-              ]
-
+            {
+                "abstract_name": "top",
+                "concrete_name": "top",
+                "bbox": [0, 0, 100, 100],
+                "parameters": [],
+                "instances": [
+                    {
+                        "abstract_template_name": "a",
+                        "concrete_template_name": "a",
+                        "instance_name": "u0",
+                        "transformation": {"oX": 0, "oY": 0, "sX": 1, "sY": 1},
+                        "fa_map": [{"formal": "x", "actual": "y"}],
+                    },
+                    {
+                        "abstract_template_name": "a",
+                        "concrete_template_name": "a",
+                        "instance_name": "u1",
+                        "transformation": {"oX": 0, "oY": 20, "sX": 1, "sY": 1},
+                        "fa_map": [{"formal": "x", "actual": "y"}],
+                    },
+                ],
             }
         ],
         "leaves": [
-            { "abstract_name": "a",
-              "concrete_name": "a",
-              "bbox": [0,0,10,10],
-              "terminals": [
-                  { "name": "x",
-                    "rect": [4,4,6,6]
-                  }
-              ]
+            {
+                "abstract_name": "a",
+                "concrete_name": "a",
+                "bbox": [0, 0, 10, 10],
+                "terminals": [{"name": "x", "rect": [4, 4, 6, 6]}],
             }
         ],
-        "global_signals": [
-            {
-                "actual": "y"
-            }
-        ]
+        "global_signals": [{"actual": "y"}],
     }
 
-    nets_d = gen_netlist( placement_verilog_d, 'top')
+    nets_d = gen_netlist(placement_verilog_d, "top")
 
-    assert 24 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d, skip_globals=False)
+    assert 24 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d, skip_globals=False
+    )
 
-    assert 0 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d, skip_globals=True)
+    assert 0 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d, skip_globals=True
+    )
 
-    placement_verilog_d['global_signals'][0]['actual'] = "a"
+    placement_verilog_d["global_signals"][0]["actual"] = "a"
 
-    assert 24 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, 'top', nets_d, skip_globals=True)
+    assert 24 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, "top", nets_d, skip_globals=True
+    )
 
 
 def test_gen_netlist_matrix():
@@ -459,70 +485,71 @@ def test_gen_netlist_matrix():
 
     placement_verilog_d = json.loads(txt)
 
+    cn = "matrix_0"
+    nets_d = gen_netlist(placement_verilog_d, cn)
 
-    cn = 'matrix_0'
-    nets_d = gen_netlist( placement_verilog_d, cn)
+    assert 27584 == calculate_HPWL_from_placement_verilog_d(
+        placement_verilog_d, cn, nets_d
+    )
 
-    assert 27584 == calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    placement_verilog_d["modules"][1]["instances"][1]["transformation"]["oY"] += 840
+    placement_verilog_d["modules"][1]["instances"][1]["transformation"]["sY"] = -1
 
-    placement_verilog_d['modules'][1]['instances'][1]['transformation']["oY"] += 840
-    placement_verilog_d['modules'][1]['instances'][1]['transformation']["sY"] = -1
+    assert standalone_overlap_checker(placement_verilog_d, cn)
 
-    assert standalone_overlap_checker( placement_verilog_d, cn)
-
-    hpwl = calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    hpwl = calculate_HPWL_from_placement_verilog_d(placement_verilog_d, cn, nets_d)
     print(hpwl)
     assert 27584 > hpwl
 
-    placement_verilog_d['modules'][0]['instances'][1]['transformation']["oX"] += 2480
-    placement_verilog_d['modules'][0]['instances'][1]['transformation']["sX"] = -1
-    assert standalone_overlap_checker( placement_verilog_d, cn)
+    placement_verilog_d["modules"][0]["instances"][1]["transformation"]["oX"] += 2480
+    placement_verilog_d["modules"][0]["instances"][1]["transformation"]["sX"] = -1
+    assert standalone_overlap_checker(placement_verilog_d, cn)
 
-    hpwl2 = calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    hpwl2 = calculate_HPWL_from_placement_verilog_d(placement_verilog_d, cn, nets_d)
     print(hpwl2)
     assert hpwl > hpwl2
 
-    placement_verilog_d['modules'][0]['instances'][3]['transformation']["oX"] += 2480
-    placement_verilog_d['modules'][0]['instances'][3]['transformation']["sX"] = -1
-    assert standalone_overlap_checker( placement_verilog_d, cn)
+    placement_verilog_d["modules"][0]["instances"][3]["transformation"]["oX"] += 2480
+    placement_verilog_d["modules"][0]["instances"][3]["transformation"]["sX"] = -1
+    assert standalone_overlap_checker(placement_verilog_d, cn)
 
-    hpwl3 = calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    hpwl3 = calculate_HPWL_from_placement_verilog_d(placement_verilog_d, cn, nets_d)
     print(hpwl3)
     assert hpwl2 > hpwl3
 
-    placement_verilog_d['modules'][0]['instances'][0]['transformation']["oY"] += 840
-    placement_verilog_d['modules'][0]['instances'][0]['transformation']["sY"] = -1
-    placement_verilog_d['modules'][0]['instances'][1]['transformation']["oY"] += 840
-    placement_verilog_d['modules'][0]['instances'][1]['transformation']["sY"] = -1
-    placement_verilog_d['modules'][0]['instances'][2]['transformation']["oY"] += 840
-    placement_verilog_d['modules'][0]['instances'][2]['transformation']["sY"] = -1
-    placement_verilog_d['modules'][0]['instances'][3]['transformation']["oY"] += 840
-    placement_verilog_d['modules'][0]['instances'][3]['transformation']["sY"] = -1
-    assert standalone_overlap_checker( placement_verilog_d, cn)
+    placement_verilog_d["modules"][0]["instances"][0]["transformation"]["oY"] += 840
+    placement_verilog_d["modules"][0]["instances"][0]["transformation"]["sY"] = -1
+    placement_verilog_d["modules"][0]["instances"][1]["transformation"]["oY"] += 840
+    placement_verilog_d["modules"][0]["instances"][1]["transformation"]["sY"] = -1
+    placement_verilog_d["modules"][0]["instances"][2]["transformation"]["oY"] += 840
+    placement_verilog_d["modules"][0]["instances"][2]["transformation"]["sY"] = -1
+    placement_verilog_d["modules"][0]["instances"][3]["transformation"]["oY"] += 840
+    placement_verilog_d["modules"][0]["instances"][3]["transformation"]["sY"] = -1
+    assert standalone_overlap_checker(placement_verilog_d, cn)
 
-    hpwl4 = calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    hpwl4 = calculate_HPWL_from_placement_verilog_d(placement_verilog_d, cn, nets_d)
     print(hpwl4)
     assert hpwl3 > hpwl4
 
-    placement_verilog_d['modules'][1]['instances'][1]['transformation']["oX"] -= 80
-    placement_verilog_d['modules'][1]['instances'][2]['transformation']["oX"] -= 80
-    assert standalone_overlap_checker( placement_verilog_d, cn)
+    placement_verilog_d["modules"][1]["instances"][1]["transformation"]["oX"] -= 80
+    placement_verilog_d["modules"][1]["instances"][2]["transformation"]["oX"] -= 80
+    assert standalone_overlap_checker(placement_verilog_d, cn)
 
-    hpwl5 = calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    hpwl5 = calculate_HPWL_from_placement_verilog_d(placement_verilog_d, cn, nets_d)
     print(hpwl5)
     assert hpwl4 > hpwl5
 
-    placement_verilog_d['modules'][0]['instances'][0]['transformation']["oY"] -= 2*84
-    placement_verilog_d['modules'][0]['instances'][1]['transformation']["oY"] -= 84
-    placement_verilog_d['modules'][0]['instances'][2]['transformation']["oY"] -= 84
+    placement_verilog_d["modules"][0]["instances"][0]["transformation"]["oY"] -= 2 * 84
+    placement_verilog_d["modules"][0]["instances"][1]["transformation"]["oY"] -= 84
+    placement_verilog_d["modules"][0]["instances"][2]["transformation"]["oY"] -= 84
 
-    placement_verilog_d['modules'][0]['instances'][1]['transformation']["oX"] -= 80
-    placement_verilog_d['modules'][0]['instances'][3]['transformation']["oX"] -= 80
+    placement_verilog_d["modules"][0]["instances"][1]["transformation"]["oX"] -= 80
+    placement_verilog_d["modules"][0]["instances"][3]["transformation"]["oX"] -= 80
 
-    assert standalone_overlap_checker( placement_verilog_d, cn)
+    assert standalone_overlap_checker(placement_verilog_d, cn)
 
-    hpwl6 = calculate_HPWL_from_placement_verilog_d( placement_verilog_d, cn, nets_d)
+    hpwl6 = calculate_HPWL_from_placement_verilog_d(placement_verilog_d, cn, nets_d)
     print(hpwl6)
     assert hpwl5 > hpwl6
 
-    print( hpwl6 / 27584 - 1)
+    print(hpwl6 / 27584 - 1)

@@ -9,8 +9,16 @@ import json
 def db():
     library = Library(loadbuiltins=False)
     with set_context(library):
-        cmodel = Model(name="CAP", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "PARALLEL": 1})
-        rmodel = Model(name="RES", pins=["PLUS", "MINUS"], parameters={"VALUE": "5.0", "PARALLEL": 1})
+        cmodel = Model(
+            name="CAP",
+            pins=["PLUS", "MINUS"],
+            parameters={"VALUE": "5.0", "PARALLEL": 1},
+        )
+        rmodel = Model(
+            name="RES",
+            pins=["PLUS", "MINUS"],
+            parameters={"VALUE": "5.0", "PARALLEL": 1},
+        )
         model_nmos = Model(
             name="TESTMOS",
             pins=["D", "G", "S", "B"],
@@ -45,7 +53,7 @@ def db():
                 name="M1",
                 model="TESTMOS",
                 pins={"D": "D", "G": "G", "S": "S", "B": "B"},
-                parameters={"PARAM1": "1.0", "M": 1}
+                parameters={"PARAM1": "1.0", "M": 1},
             )
         )
         subckt.elements.append(
@@ -53,7 +61,7 @@ def db():
                 name="M2",
                 model="TESTMOS",
                 pins={"D": "D1", "G": "G1", "S": "S1", "B": "B"},
-                parameters={"PARAM1": "1.0", "M": 2}
+                parameters={"PARAM1": "1.0", "M": 2},
             )
         )
     return library
@@ -63,6 +71,7 @@ def write(lib):
     with open("sample.json", "w") as f:
         json.dump(lib.dict()["__root__"], f, indent=2)
 
+
 def test_read(db):
     write(db)
     with open("sample.json", "r") as f:
@@ -71,17 +80,19 @@ def test_read(db):
     library = Library(loadbuiltins=False)
     with set_context(library):
         for x in data:
-            if 'generator' in x:
+            if "generator" in x:
                 library.append(SubCircuit(**{k: v for k, v in x.items() if v}))
             else:
-                library.append(Model(**{k:v for k,v in x.items() if v}))
+                library.append(Model(**{k: v for k, v in x.items() if v}))
     subckt = library.find("SUBCKT")
     assert subckt.get_element("C1").parameters == {"VALUE": "2", "PARALLEL": "1"}
     assert subckt.get_element("R1").parameters == {"VALUE": "10", "PARALLEL": "1"}
     assert subckt.get_element("M1").parameters == {"PARAM1": "1.0", "M": "1"}
     assert subckt.get_element("M2").parameters == {"PARAM1": "1.0", "M": "2"}
 
+
 def test_basic_template():
     from align.compiler.util import get_primitive_spice
+
     template_path = get_primitive_spice()
     assert template_path.exists()

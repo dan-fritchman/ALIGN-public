@@ -14,15 +14,15 @@ from polish import *
 from collections import defaultdict
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 import argparse
 
 
-
 class AppWithCallbacksAndState:
     def __init__(self, placements, histo, pairs, max_x, max_y):
-        external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+        external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
         self.app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
         self.placements = placements
@@ -35,58 +35,60 @@ class AppWithCallbacksAndState:
         self.prev_idx = None
 
         self.app.layout = html.Div(
-            id='frame',
+            id="frame",
             children=[
                 html.Div(
                     children=[
-                        html.H2(children='Pareto Frontier'),
+                        html.H2(children="Pareto Frontier"),
                         dcc.Graph(
-                            id='width-vs-height',
-                            figure=make_tradeoff_fig(self.pairs)
-                        )
+                            id="width-vs-height", figure=make_tradeoff_fig(self.pairs)
+                        ),
                     ],
-                    style={'display': 'inline-block', 'vertical-align': 'top'}
+                    style={"display": "inline-block", "vertical-align": "top"},
                 ),
                 html.Div(
                     children=[
-                        html.H2(children='Placement'),
+                        html.H2(children="Placement"),
                         dcc.Graph(
-                            id='Placement',
-                            figure = make_placement_graph([], self.max_x, self.max_y)
-                        )
+                            id="Placement",
+                            figure=make_placement_graph([], self.max_x, self.max_y),
+                        ),
                     ],
-                    style={'display': 'inline-block', 'vertical-align': 'top'}
+                    style={"display": "inline-block", "vertical-align": "top"},
                 ),
                 html.Div(
                     children=[
-                        html.H2(children='Tree'),
-                        dcc.Markdown(children='',id='Tree')
+                        html.H2(children="Tree"),
+                        dcc.Markdown(children="", id="Tree"),
                     ],
-                    style={'display': 'inline-block', 'vertical-align': 'top'}
-                )
-            ]
+                    style={"display": "inline-block", "vertical-align": "top"},
+                ),
+            ],
         )
 
-        self.app.callback( (Output('Placement', 'figure'),
-                       Output('Tree', 'children'),
-                            Output('width-vs-height', 'clickData')),
-                      [Input('width-vs-height', 'clickData')])(self.display_hover_data)
+        self.app.callback(
+            (
+                Output("Placement", "figure"),
+                Output("Tree", "children"),
+                Output("width-vs-height", "clickData"),
+            ),
+            [Input("width-vs-height", "clickData")],
+        )(self.display_hover_data)
 
-
-    def display_hover_data(self,clickData):
+    def display_hover_data(self, clickData):
         placement = []
-        md_str = ''
+        md_str = ""
         if clickData is not None:
-            points = clickData['points']
+            points = clickData["points"]
             assert 1 == len(points)
-            idx = points[0]['pointNumber']
+            idx = points[0]["pointNumber"]
 
             lst = self.histo[self.pairs[idx]]
 
             if self.prev_idx != idx:
                 self.subindex = 0
             else:
-                self.subindex = (self.subindex+1)%len(lst)
+                self.subindex = (self.subindex + 1) % len(lst)
             ps = lst[self.subindex]
             self.prev_idx = idx
 
@@ -103,29 +105,36 @@ Subindex: {self.subindex}/{len(lst)}
 
         return make_placement_graph(placement, self.max_x, self.max_y), md_str, None
 
-def run_gui( DB, bboxes):
-    logging.info( f'Running GUI: {bboxes}')
+
+def run_gui(DB, bboxes):
+    logging.info(f"Running GUI: {bboxes}")
 
     histo = defaultdict(list)
-    for idx,p in enumerate(bboxes):
+    for idx, p in enumerate(bboxes):
         histo[p].append(idx)
 
     pairs = list(histo.keys())
 
-    max_x = max( p[0] for p in pairs)
-    max_y = max( p[1] for p in pairs)
+    max_x = max(p[0] for p in pairs)
+    max_y = max(p[1] for p in pairs)
 
-    logging.info( f'histo: {histo}')
+    logging.info(f"histo: {histo}")
 
-    awcas = AppWithCallbacksAndState( [], histo, pairs, max_x, max_y)
+    awcas = AppWithCallbacksAndState([], histo, pairs, max_x, max_y)
     awcas.app.run_server(debug=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser( description='Mockup of ALIGN UI')
-    parser.add_argument( '-s', '--block_str', type=str, default='ABCD', help='Blocks to use in enumeration; must only include the characters "ABCEDF"; strings longer than 5 will take a long time')
+    parser = argparse.ArgumentParser(description="Mockup of ALIGN UI")
+    parser.add_argument(
+        "-s",
+        "--block_str",
+        type=str,
+        default="ABCD",
+        help='Blocks to use in enumeration; must only include the characters "ABCEDF"; strings longer than 5 will take a long time',
+    )
 
     args = parser.parse_args()
 
-    AppWithCallbacksAndState( *main(args.block_str)).app.run_server(debug=True)
+    AppWithCallbacksAndState(*main(args.block_str)).app.run_server(debug=True)

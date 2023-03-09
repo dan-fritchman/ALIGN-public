@@ -15,16 +15,30 @@ def gen_parser():
     parser.add_argument("-n", "--height", type=int, required=True)
     parser.add_argument("-r", "--res", type=float, required=True)
     parser.add_argument("-q", "--pinSwitch", type=int, required=False, default=0)
-    parser.add_argument("-d", "--pdkdir", type=pathlib.Path, required=False, default=pathlib.Path(__file__).resolve().parent)
-    parser.add_argument("-o", "--outputdir", type=pathlib.Path, required=False, default=pathlib.Path(__file__).resolve().parent)
+    parser.add_argument(
+        "-d",
+        "--pdkdir",
+        type=pathlib.Path,
+        required=False,
+        default=pathlib.Path(__file__).resolve().parent,
+    )
+    parser.add_argument(
+        "-o",
+        "--outputdir",
+        type=pathlib.Path,
+        required=False,
+        default=pathlib.Path(__file__).resolve().parent,
+    )
     return parser
 
 
 def read_primitive_spice(args):
     model_statements = args.pdkdir / "models.sp"
-    assert model_statements.exists(), f"No model file found for this PDK {model_statements}"
+    assert (
+        model_statements.exists()
+    ), f"No model file found for this PDK {model_statements}"
     parser = SpiceParser()
-    with open(model_statements, 'r') as f:
+    with open(model_statements, "r") as f:
         lines = f.read()
     parser.parse(lines)
 
@@ -36,16 +50,22 @@ def read_primitive_spice(args):
     with open(primitive_spice) as f:
         lines = f.read()
     parser.parse(lines)
-    primitive_def = parser.library.find('RES_2T')
+    primitive_def = parser.library.find("RES_2T")
     assert primitive_def, f"RES_2T not found in library {primitive_spice}"
-    primitive_def.add_generator('RES')
+    primitive_def.add_generator("RES")
     assert primitive_def, f"No such primitive definition found {args.primitive}"
     return primitive_def
 
 
 def main(args):
     res_subckt = read_primitive_spice(args)
-    return generate_primitive(args.block_name, res_subckt, value=(args.height, args.res), pdkdir=args.pdkdir, outputdir=args.outputdir)
+    return generate_primitive(
+        args.block_name,
+        res_subckt,
+        value=(args.height, args.res),
+        pdkdir=args.pdkdir,
+        outputdir=args.outputdir,
+    )
 
 
 if __name__ == "__main__":

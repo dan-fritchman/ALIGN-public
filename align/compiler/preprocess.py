@@ -52,7 +52,7 @@ def preprocess_stack_parallel(ckt_data, design_name):
                     # remove dummy devices powered down or shorted D/G/S
                     remove_dummy_devices(subckt)
                 if SameTemplate:
-                    #generates same template for identical subcircuit instances in the circuit
+                    # generates same template for identical subcircuit instances in the circuit
                     same_template(subckt)
                 logger.debug(
                     f"After reducing series/parallel, elements count in subckt {subckt.name}: {len(subckt.elements)}"
@@ -110,7 +110,7 @@ def remove_dummies(library, dummy_hiers, top):
                                     name=ele.name,
                                     model=y.model,
                                     pins=pins,
-                                    parameters=y.parameters
+                                    parameters=y.parameters,
                                 )
                             )
                             logger.info(
@@ -153,9 +153,13 @@ def swap_SD(circuit, G, node):
         G ([type]): [description]
         node ([type]): [description]
     """
-    nbrd = [nbr for nbr in G.neighbors(node) if "D" in G.get_edge_data(node, nbr)["pin"]][0]
+    nbrd = [
+        nbr for nbr in G.neighbors(node) if "D" in G.get_edge_data(node, nbr)["pin"]
+    ][0]
     assert nbrd, f"incorrect node connections {circuit.get_element(node)}"
-    nbrs = [nbr for nbr in G.neighbors(node) if "S" in G.get_edge_data(node, nbr)["pin"]][0]
+    nbrs = [
+        nbr for nbr in G.neighbors(node) if "S" in G.get_edge_data(node, nbr)["pin"]
+    ][0]
     assert nbrs, f"incorrect node connections {circuit.get_element(node)}"
     # Swapping D and S
     logger.warning(f"Swapping D and S {node} {nbrd} {nbrs} {circuit.get_element(node)}")
@@ -287,7 +291,7 @@ def add_parallel_devices(ckt):
         G = Graph(ckt)
         for node in G.neighbors(net):
             ele = ckt.get_element(node)
-            if 'PARALLEL' not in ele.parameters:
+            if "PARALLEL" not in ele.parameters:
                 continue  # this element does not support multiplicity
             p = {**ele.pins, **ele.parameters}
             p["model"] = ele.model
@@ -299,8 +303,12 @@ def add_parallel_devices(ckt):
         for pd in parallel_devices.values():
             if len(pd) > 1:
                 pd0 = sorted(pd, key=lambda x: x.name)[0]
-                logger.info(f"removing parallel instances {[x.name for x in pd[1:]]} and updating {pd0.name} parameters")
-                pd0.parameters["PARALLEL"] = str(sum([int(getattr(x.parameters, "PARALLEL", "1")) for x in pd]))
+                logger.info(
+                    f"removing parallel instances {[x.name for x in pd[1:]]} and updating {pd0.name} parameters"
+                )
+                pd0.parameters["PARALLEL"] = str(
+                    sum([int(getattr(x.parameters, "PARALLEL", "1")) for x in pd])
+                )
                 for rn in pd[1:]:
                     G.remove(rn)
 
@@ -324,7 +332,7 @@ def add_series_devices(ckt):
         nbrs = sorted(list(G.neighbors(net)))
         if len(nbrs) == 2 and net not in remove_nodes:
             nbr1, nbr2 = [ckt.get_element(nbr) for nbr in nbrs]
-            if 'STACK' not in nbr1.parameters:
+            if "STACK" not in nbr1.parameters:
                 continue  # this element does not support stacking
             # Same instance type
             if nbr1.model != nbr2.model:
@@ -391,16 +399,23 @@ def remove_dummy_devices(subckt):
     remove_inst = []
     for inst in subckt.elements:
         base_model = _find_base_model(subckt, inst.model)
-        if not all([k in inst.pins for k in 'DGS']):
+        if not all([k in inst.pins for k in "DGS"]):
             continue
-        if (power and "PMOS" == base_model and inst.pins['G'] in power) or \
-           (gnd and "NMOS" == base_model and inst.pins['G'] in gnd) or \
-           ((base_model in ["NMOS", "PMOS"]) and inst.pins['D'] == inst.pins['G'] == inst.pins['S']):
+        if (
+            (power and "PMOS" == base_model and inst.pins["G"] in power)
+            or (gnd and "NMOS" == base_model and inst.pins["G"] in gnd)
+            or (
+                (base_model in ["NMOS", "PMOS"])
+                and inst.pins["D"] == inst.pins["G"] == inst.pins["S"]
+            )
+        ):
             remove_inst.append(inst)
 
     G = Graph(subckt)
-    if len(subckt.elements)>1 and len(subckt.elements) == len(remove_inst):
-        assert False, f"subcircuit {subckt.name} has all dummy devices, please remove this hiearchy or turn off remove_dummy_devices feature"
+    if len(subckt.elements) > 1 and len(subckt.elements) == len(remove_inst):
+        assert (
+            False
+        ), f"subcircuit {subckt.name} has all dummy devices, please remove this hiearchy or turn off remove_dummy_devices feature"
     logger.debug(f"removed dummy devices {[inst.name for inst in remove_inst]}")
     for inst in remove_inst:
         G.remove(inst)
@@ -415,8 +430,10 @@ def same_template(subckt):
     Args:
         subckt (_type_): _description_
     """
-    logger.debug(f"creating same template constarint for all sub-hierarchy instances in the circuit")
-    groups = {} #model:instance names
+    logger.debug(
+        f"creating same template constarint for all sub-hierarchy instances in the circuit"
+    )
+    groups = {}  # model:instance names
     for inst in subckt.elements:
         if isinstance(subckt.parent.find(inst.model), SubCircuit):
             key = inst.model + gen_key(inst.parameters)
@@ -425,6 +442,6 @@ def same_template(subckt):
             else:
                 groups[key] = [inst.name]
     for group in groups.values():
-        if len(group) > 1 :
+        if len(group) > 1:
             with set_context(subckt.constraints):
                 subckt.constraints.append(constraint.SameTemplate(instances=group))

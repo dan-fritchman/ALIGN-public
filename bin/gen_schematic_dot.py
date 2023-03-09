@@ -9,11 +9,11 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from align import circuit
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser( description="Visualize Netlist using Graphviz")
+    parser = argparse.ArgumentParser(description="Visualize Netlist using Graphviz")
 
-    parser.add_argument( "-o", "--output_file", type=str, default=None)
-    parser.add_argument( "-n", "--block_name", type=str, default="BUFFER_VCM_FINAL1")
-    parser.add_argument( "-i", "--input_file", type=str, default=None)
+    parser.add_argument("-o", "--output_file", type=str, default=None)
+    parser.add_argument("-n", "--block_name", type=str, default="BUFFER_VCM_FINAL1")
+    parser.add_argument("-i", "--input_file", type=str, default=None)
 
     args = parser.parse_args()
 

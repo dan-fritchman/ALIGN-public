@@ -8,7 +8,9 @@ logger = logging.getLogger(__name__)
 
 class CanvasPDK(DefaultCanvas):
     def __init__(self):
-        self.pdk = Pdk().load(pathlib.Path(__file__).resolve().parent / 'layers.json')  # backward compatibility
+        self.pdk = Pdk().load(
+            pathlib.Path(__file__).resolve().parent / "layers.json"
+        )  # backward compatibility
         super().__init__(self.pdk, check=False)
 
 

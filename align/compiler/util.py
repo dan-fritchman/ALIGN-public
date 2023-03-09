@@ -108,7 +108,9 @@ def leaf_weights(G, node, nbr):
         assert node in subckt.nets, f"net {node} not in {subckt.name}"
         n = subckt.get_element(nbr)
         s = subckt.parent.find(n.model)
-        assert (node in n.pins.values()), f"net {node} not connected to {n.name}, {n.pins}"
+        assert (
+            node in n.pins.values()
+        ), f"net {node} not connected to {n.name}, {n.pins}"
         p = list(n.pins.keys())[list(n.pins.values()).index(node)]
         if isinstance(s, SubCircuit):
             conn_type = set(get_leaf_connection(s, p))
@@ -127,7 +129,7 @@ def reduced_neighbors(G, node, nbr):
 
 def reduced_SD_neighbors(G, node, nbr):
     conn_type = leaf_weights(G, node, nbr)
-    if conn_type-{"B", "G"}:
+    if conn_type - {"B", "G"}:
         return True
     else:
         return False
@@ -156,25 +158,36 @@ def gen_key(param):
         str: unique hex key
     """
     skeys = sorted(param.keys())
-    arg_str = '_'.join([k+':'+str(param[k]) for k in skeys])
-    key = f"_{str(int(hashlib.sha256(arg_str.encode('utf-8')).hexdigest(), 16) % 10**8)}"
+    arg_str = "_".join([k + ":" + str(param[k]) for k in skeys])
+    key = (
+        f"_{str(int(hashlib.sha256(arg_str.encode('utf-8')).hexdigest(), 16) % 10**8)}"
+    )
     return key
+
 
 def gen_group_key(multi_param):
     param = FlatDict(multi_param)
-    arg_str = '_'.join([str(k)+':'+str(param[k]) for k in sorted(param.keys())])
-    key = f"_{str(int(hashlib.sha256(arg_str.encode('utf-8')).hexdigest(), 16) % 10**8)}"
+    arg_str = "_".join([str(k) + ":" + str(param[k]) for k in sorted(param.keys())])
+    key = (
+        f"_{str(int(hashlib.sha256(arg_str.encode('utf-8')).hexdigest(), 16) % 10**8)}"
+    )
     return key
+
 
 def create_node_id(G, node1, ports_weight=None):
     instance = G.nodes[node1].get("instance")
     if instance:
-        properties = {'model': instance.model, 'n_pins': len(set(instance.pins.values()))}
+        properties = {
+            "model": instance.model,
+            "n_pins": len(set(instance.pins.values())),
+        }
         if instance.parameters:
             properties.update(instance.parameters)
         return gen_key(properties)
     else:
-        nbrs1 = [nbr for nbr in G.neighbors(node1) if reduced_SD_neighbors(G, node1, nbr)]
+        nbrs1 = [
+            nbr for nbr in G.neighbors(node1) if reduced_SD_neighbors(G, node1, nbr)
+        ]
         properties = [G.nodes[nbr].get("instance").model for nbr in nbrs1]
         if node1 in ports_weight:
             properties.extend([str(p) for p in ports_weight[node1]])
@@ -182,7 +195,7 @@ def create_node_id(G, node1, ports_weight=None):
             leaf_wt = [leaf_weights(G, node1, nbr) for nbr in nbrs1]
             properties.extend([str(p) for p in leaf_wt])
         properties = sorted(properties)
-        arg_str = '_'.join(properties)
+        arg_str = "_".join(properties)
         key = f"_{str(int(hashlib.sha256(arg_str.encode('utf-8')).hexdigest(), 16) % 10**8)}"
         return key
 
@@ -212,7 +225,9 @@ def compare_two_nodes(G, node1: str, node2: str, ports_weight=None):
 
 
 def get_primitive_spice():
-    return pathlib.Path(__file__).resolve().parent.parent / "config" / "basic_template.sp"
+    return (
+        pathlib.Path(__file__).resolve().parent.parent / "config" / "basic_template.sp"
+    )
 
 
 def get_generator(name, pdkdir):
@@ -235,15 +250,19 @@ def get_generator(name, pdkdir):
         module = importlib.import_module(pdk_dir_stem)
         return _find_generator_class(module, name)
     except ImportError:
-        init_file = pdk_dir_path / '__init__.py'
+        init_file = pdk_dir_path / "__init__.py"
         if init_file.is_file():  # is pdk a package
-            spec = importlib.util.spec_from_file_location(pdk_dir_stem, pdk_dir_path / '__init__.py')
+            spec = importlib.util.spec_from_file_location(
+                pdk_dir_stem, pdk_dir_path / "__init__.py"
+            )
             module = importlib.util.module_from_spec(spec)
             sys.modules[pdk_dir_stem] = module
             spec.loader.exec_module(module)
             return _find_generator_class(module, name)
         else:  # is pdk old school (backward compatibility)
-            spec = importlib.util.spec_from_file_location("primitive", pdkdir / 'primitive.py')
+            spec = importlib.util.spec_from_file_location(
+                "primitive", pdkdir / "primitive.py"
+            )
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             return getattr(module, name, False) or getattr(module, name.lower(), False)

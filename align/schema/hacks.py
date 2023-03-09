@@ -1,4 +1,4 @@
-'''
+"""
 These hacked data structures emulate dictionaries used in
    our existing flow but allow us to insert, validate &
    use formal constraints in ConstraintDB. They serve to
@@ -6,7 +6,7 @@ These hacked data structures emulate dictionaries used in
 
 TODO: Eliminate this module by replacing these data
       structures with SubCircuit, Instance etc.
-'''
+"""
 
 import itertools
 
@@ -18,12 +18,13 @@ from . import checker
 from . import types
 
 import logging
+
 logger = logging.getLogger(__name__)
 
-class DictEmulator(BaseModel):
 
+class DictEmulator(BaseModel):
     class Config:
-        extra = 'allow'
+        extra = "allow"
         allow_mutation = True
 
     def __getitem__(self, item):
@@ -49,33 +50,33 @@ class VerilogJsonInstance(DictEmulator):
     fa_map: List[FormalActualMap]
 
     def translate(self, solver):
-        '''
+        """
         Bounding boxes must have non-zero
         height & width
-        '''
+        """
         b = solver.bbox_vars(self.instance_name)
         yield b.llx < b.urx
         yield b.lly < b.ury
 
 
 class VerilogJsonModule(DictEmulator):
-    #name: str
+    # name: str
     parameters: List[str]
     constraints: ConstraintDB
     instances: List[VerilogJsonInstance]
 
     def __init__(self, *args, **kwargs):
         constraints = []
-        if 'constraints' in kwargs:
-            constraints = kwargs['constraints']
-        kwargs['constraints'] = []
+        if "constraints" in kwargs:
+            constraints = kwargs["constraints"]
+        kwargs["constraints"] = []
         super().__init__(*args, **kwargs)
         with set_context(self.constraints):
             self.constraints.extend(constraints)
 
     def translate(self, solver):
         # Initialize subcircuit bounding box
-        bb = solver.bbox_vars('subcircuit')
+        bb = solver.bbox_vars("subcircuit")
         yield bb.llx < bb.urx
         yield bb.lly < bb.ury
         # Initialize element bounding boxes
@@ -103,19 +104,25 @@ class VerilogJsonModule(DictEmulator):
             self._checker = checker.Z3Checker()
             formulae = self.translate(self._checker)
         else:
-            assert self._checker is not None, "Incremental verification is not possible as solver hasn't been instantiated yet"
+            assert (
+                self._checker is not None
+            ), "Incremental verification is not possible as solver hasn't been instantiated yet"
             formulae = types.cast_to_solver(constraint, self._checker)
         for x in formulae:
             self._checker.append(x)
         try:
             self._checker.solve()
         except checker.SolutionNotFoundError as e:
-            logger.debug(f'Checker raised error:\n {e}')
-            core = [x.json() for x in itertools.chain(self.instances, self.constraints, [constraint]) if self._checker.label(x) in e.labels]
-            logger.error(f'Solution not found due to conflict between:')
+            logger.debug(f"Checker raised error:\n {e}")
+            core = [
+                x.json()
+                for x in itertools.chain(self.instances, self.constraints, [constraint])
+                if self._checker.label(x) in e.labels
+            ]
+            logger.error(f"Solution not found due to conflict between:")
             for x in core:
-                logger.error(f'{x}')
-            raise # checker.SolutionNotFoundError(message=e.message, labels=e.labels)
+                logger.error(f"{x}")
+            raise  # checker.SolutionNotFoundError(message=e.message, labels=e.labels)
 
     #
     # Private attribute affecting class behavior

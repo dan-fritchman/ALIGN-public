@@ -40,9 +40,11 @@ class process_arrays:
         self.condition = True
         self.is_digital = False
         for const in ckt.constraints:
-            if isinstance(const, constraint.PowerPorts) or\
-                    isinstance(const, constraint.GroundPorts) or \
-                    isinstance(const, constraint.ClockPorts):
+            if (
+                isinstance(const, constraint.PowerPorts)
+                or isinstance(const, constraint.GroundPorts)
+                or isinstance(const, constraint.ClockPorts)
+            ):
                 self.stop_points.extend(const.ports)
             elif isinstance(const, constraint.ConfigureCompiler):
                 self.condition = const.identify_array
@@ -60,12 +62,16 @@ class process_arrays:
         for k, pair in self.match_pairs.items():
             logger.debug(f"all pairs from {k}:{pair}")
             if "array_start_point" in pair.keys():
-                if pair["array_start_point"] and isinstance(pair["array_start_point"][0], str):
+                if pair["array_start_point"] and isinstance(
+                    pair["array_start_point"][0], str
+                ):
                     # Check later for CTDTDSM
                     self.hier_sp.update(pair["array_start_point"])
                 del pair["array_start_point"]
                 logger.debug(f"New symmetrical start points {pair}")
-        logger.debug(f"updated match pairs: {pprint.pformat(self.match_pairs, indent=4)}")
+        logger.debug(
+            f"updated match pairs: {pprint.pformat(self.match_pairs, indent=4)}"
+        )
 
     def _check_array_start_points(self, traversed):
         logger.debug(f"new hier start points: {self.hier_sp}")
@@ -75,11 +81,15 @@ class process_arrays:
                 traversed: {traversed} \
                 existing match pairs: {pprint.pformat(self.match_pairs, indent=4)}"
             )
-            assert sp in self.graph.nodes(), f"{sp} not found in graph {self.graph.nodes()}"
+            assert (
+                sp in self.graph.nodes()
+            ), f"{sp} not found in graph {self.graph.nodes()}"
             array = self.find_array(sp, traversed)
             if array:
                 logger.debug(f"found array instances {array}")
-        logger.debug(f"updated match pairs: {pprint.pformat(self.match_pairs, indent=4)}")
+        logger.debug(
+            f"updated match pairs: {pprint.pformat(self.match_pairs, indent=4)}"
+        )
 
     def find_array(self, start_node: str, traversed: list):
         """
@@ -96,7 +106,7 @@ class process_arrays:
             logger.debug(f"auto-array generation set to false")
             return
         elif self.is_digital:
-            logger.debug(f'cant identify array in digital ckt {self.name}')
+            logger.debug(f"cant identify array in digital ckt {self.name}")
             return
 
         node_hier = {}
@@ -123,8 +133,9 @@ class process_arrays:
         assert array, f"Wrong array identification, check find_array() code "
         array_2D = list()
         for inst_list in array.values():
-            array_2D.append([inst for inst in sorted(inst_list)
-                             if self.ckt.get_element(inst)])
+            array_2D.append(
+                [inst for inst in sorted(inst_list) if self.ckt.get_element(inst)]
+            )
         if len(array_2D[0]) == 1:
             self.align_block_const[start_node] = [inst[0] for inst in array_2D]
             return self.align_block_const[start_node]
@@ -136,14 +147,16 @@ class process_arrays:
         similar_groups = {}
         logger.debug(f"creating groups for all neighbors: {lvl1}")
         node_properties = {}
-        for  n in lvl1:
-            node_properties[n] = create_node_id(self.graph, n)+'_'.join(sorted(self.graph.get_edge_data(node, n)['pin']))
-        for k,v in node_properties.items():
+        for n in lvl1:
+            node_properties[n] = create_node_id(self.graph, n) + "_".join(
+                sorted(self.graph.get_edge_data(node, n)["pin"])
+            )
+        for k, v in node_properties.items():
             if v in similar_groups:
                 similar_groups[v].append(k)
             else:
                 similar_groups[v] = [k]
-        return sorted(list(v for v in similar_groups.values() if len(v)>1))
+        return sorted(list(v for v in similar_groups.values() if len(v) > 1))
 
     def trace_template(self, match_grps, visited, template, array):
         next_match = {}
@@ -153,7 +166,9 @@ class process_arrays:
             next_match[source] = list()
             for node in sorted(groups):
                 nbrs = set(self.graph.neighbors(node)) - set(traversed)
-                lvl1 = [nbr for nbr in nbrs if reduced_SD_neighbors(self.graph, node, nbr)]
+                lvl1 = [
+                    nbr for nbr in nbrs if reduced_SD_neighbors(self.graph, node, nbr)
+                ]
                 # logger.debug(f"lvl1 {lvl1} {set(self.graph.neighbors(node))} {traversed}")
                 next_match[source].extend(lvl1)
                 visited += lvl1
@@ -171,7 +186,9 @@ class process_arrays:
                 self.trace_template(next_match, visited, template, array)
 
     def match_branches(self, nodes_dict):
-        logger.debug(f"matching next lvl branches {nodes_dict} stop points: {self.stop_points}")
+        logger.debug(
+            f"matching next lvl branches {nodes_dict} stop points: {self.stop_points}"
+        )
         nbr_values = {}
         for node, nbrs in nodes_dict.items():
             super_list = list()
@@ -194,9 +211,15 @@ class process_arrays:
         vals = list()
         for val in match.values():
             common_node = set(val).intersection(vals)
-            common_element = [node for node in common_node if self.graph._is_element(self.graph.nodes[node])]
+            common_element = [
+                node
+                for node in common_node
+                if self.graph._is_element(self.graph.nodes[node])
+            ]
             if common_element:
-                logger.debug(f"{common_element} already existing , ending further array search")
+                logger.debug(
+                    f"{common_element} already existing , ending further array search"
+                )
                 return False
             else:
                 vals += val
@@ -207,8 +230,7 @@ class process_arrays:
         logger.debug(f"AlignBlock const: {self.align_block_const}")
         for key, inst_list in self.align_block_const.items():
             logger.debug(f"align instances: {inst_list}")
-            h_blocks = [inst for inst in inst_list
-                        if inst in self.graph]
+            h_blocks = [inst for inst in inst_list if inst in self.graph]
             if len(h_blocks) > 0:
                 for const in self.iconst:
                     if isinstance(const, constraint.Align):
@@ -222,26 +244,39 @@ class process_arrays:
                     for block in h_blocks:
                         block_1 = self.ckt.get_element(block)
                         if block_0.pins != block_1.pins:
-                            self.iconst.append(constraint.Align(line="h_bottom", instances=h_blocks))
+                            self.iconst.append(
+                                constraint.Align(line="h_bottom", instances=h_blocks)
+                            )
                             break
                     else:
                         # TODO: Create a virtual hierarchy rather than Align
-                        self.iconst.append(constraint.AlignInOrder(direction="horizontal", instances=h_blocks))
+                        self.iconst.append(
+                            constraint.AlignInOrder(
+                                direction="horizontal", instances=h_blocks
+                            )
+                        )
 
         logger.debug(f"AlignBlock const update {self.iconst}")
-
 
     def add_new_array_hier(self):
         logger.debug(f"New hierarchy instances: {self.new_hier_instances}")
         sub_hier_elements = set()
         for key, array_2D in self.new_hier_instances.items():
             logger.debug(f"new hier instances: {array_2D}")
-            all_inst = [inst for template in array_2D for inst in template
-                        if inst in self.graph and inst not in sub_hier_elements]
+            all_inst = [
+                inst
+                for template in array_2D
+                for inst in template
+                if inst in self.graph and inst not in sub_hier_elements
+            ]
             # Filter repeated elements across array of obejcts
-            repeated_elements = set([inst for inst, count in Counter(all_inst).items() if count > 1])
+            repeated_elements = set(
+                [inst for inst, count in Counter(all_inst).items() if count > 1]
+            )
             all_inst = set(all_inst) - repeated_elements
-            array_2D = [list(set(array_1D) - repeated_elements) for array_1D in array_2D]
+            array_2D = [
+                list(set(array_1D) - repeated_elements) for array_1D in array_2D
+            ]
             sub_hier_elements.update(all_inst)
             if len(all_inst) <= 1:
                 logger.debug(f"not enough elements to create a hierarchy")
@@ -251,17 +286,23 @@ class process_arrays:
             all_template_names = list()
             for template in array_2D:
                 template_name = self.get_new_subckt_name("ARRAY_TEMPLATE")
-                create_new_hiearchy(self.dl, new_array_hier_name, template_name, template)
+                create_new_hiearchy(
+                    self.dl, new_array_hier_name, template_name, template
+                )
                 all_template_names.append(template_name)
-            self.add_array_placement_constraints(new_array_hier_name, all_template_names)
+            self.add_array_placement_constraints(
+                new_array_hier_name, all_template_names
+            )
 
     def add_array_placement_constraints(self, hier, modules):
         # TODO make it sizing aware
         # array placement constraint
         arre_hier_const = self.dl.find(hier).constraints
         with set_context(arre_hier_const):
-            instances = ['X_'+module for module in modules]
-            arre_hier_const.append(constraint.Align(line="h_bottom", instances=instances))
+            instances = ["X_" + module for module in modules]
+            arre_hier_const.append(
+                constraint.Align(line="h_bottom", instances=instances)
+            )
             arre_hier_const.append(constraint.SameTemplate(instances=instances))
         # template placement constraint
         # for template in modules:
@@ -291,10 +332,11 @@ def create_new_hiearchy(dl, parent_name, child_name, elements, pins_map=None):
             if parent.get_element(ele):
                 pins_map.update({net: net for net in G.neighbors(ele)})
         logger.debug(f"pins {pins_map} {elements} {parent.pins}")
-        pins_map = {net: net for net in pins_map.keys()
-                    if net in parent.pins or
-                    (set(G.neighbors(net))-set(elements))
-                    }
+        pins_map = {
+            net: net
+            for net in pins_map.keys()
+            if net in parent.pins or (set(G.neighbors(net)) - set(elements))
+        }
     assert pins_map, f"can't create module with no pins"
     logger.debug(f"new subckt pins : {pins_map}")
     assert not dl.find(child_name), f"subcircuit {child_name} already existing"
@@ -324,14 +366,11 @@ def create_new_hiearchy(dl, parent_name, child_name, elements, pins_map=None):
             ):
                 child.constraints.append(const)
     # Remove elements from subckt then add new_subckt instance
-    inst_name = "X_"+child_name
+    inst_name = "X_" + child_name
     with set_context(parent.elements):
         for pe in pes:
             parent.elements.remove(pe)
         X1 = Instance(
-            name=inst_name,
-            model=child_name,
-            pins=pins_map,
-            abstract_name=child_name
+            name=inst_name, model=child_name, pins=pins_map, abstract_name=child_name
         )
         parent.elements.append(X1)

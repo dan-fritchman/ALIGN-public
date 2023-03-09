@@ -21,15 +21,11 @@ def generate_hierarchy(
     design_name: str,
     output_dir: pathlib.Path,
     flatten_heirarchy: bool,
-    pdk_dir: pathlib.Path
+    pdk_dir: pathlib.Path,
 ):
     config_path = pathlib.Path(__file__).resolve().parent.parent / "config"
     ckt_data, primitive_library = compiler_input(
-        netlist_path,
-        design_name,
-        pdk_dir,
-        config_path,
-        flatten_heirarchy
+        netlist_path, design_name, pdk_dir, config_path, flatten_heirarchy
     )
     annotate_library(ckt_data, primitive_library)
     primitives = PrimitiveLibrary(ckt_data, pdk_dir).gen_primitive_collateral()
@@ -38,12 +34,13 @@ def generate_hierarchy(
 
     return primitives
 
+
 def compiler_input(
     input_ckt: pathlib.Path,
     design_name: str,
     pdk_dir: pathlib.Path,
     config_path: pathlib.Path,
-    flat=0
+    flat=0,
 ):
     """
     Reads input spice file, converts to a graph format and create hierarchies in the graph
@@ -102,15 +99,12 @@ def annotate_library(ckt_data, primitive_library):
             ), f"duplicate pins found in module {ckt.name}, {ckt.pins}"
             for ele in ckt.elements:
                 if isinstance(ckt_data.find(ele.model), SubCircuit):
-                    assert len(ele.pins) == len(ckt_data.find(ele.model).pins), "incorrect subckt instantiation"
+                    assert len(ele.pins) == len(
+                        ckt_data.find(ele.model).pins
+                    ), "incorrect subckt instantiation"
 
 
-def compiler_output(
-    ckt_data,
-    design_name: str,
-    result_dir: pathlib.Path,
-    primitives
-):
+def compiler_output(ckt_data, design_name: str, result_dir: pathlib.Path, primitives):
     """compiler_output: write output in verilog format
     Args:
         ckt_data : annotated ckt library  and constraint
@@ -122,7 +116,7 @@ def compiler_output(
     assert top_ckt, f"design {top_ckt} not found in database"
     result_dir.mkdir(exist_ok=True)
 
-    with open(result_dir/"__primitives_library__.json", "w") as f:
+    with open(result_dir / "__primitives_library__.json", "w") as f:
         json.dump(primitives.dict()["__root__"], f, indent=2)
 
     verilog_tbl = {"modules": [], "global_signals": []}
@@ -130,7 +124,11 @@ def compiler_output(
     for subckt in ckt_data:
         if not isinstance(subckt, SubCircuit):
             continue
-        gen_const = [True for const in subckt.constraints if isinstance(const, constraint.Generator)]
+        gen_const = [
+            True
+            for const in subckt.constraints
+            if isinstance(const, constraint.Generator)
+        ]
         if not gen_const:
             with open(result_dir / f"{subckt.name.lower()}.const.json", "w") as f:
                 json.dump(subckt.constraints.dict()["__root__"], f, indent=2)
@@ -157,23 +155,26 @@ def compiler_output(
     if len(pg_grid) > 0:
         for i, nm in enumerate(pg_grid):
             verilog_tbl["global_signals"].append(
-                {"prefix": "global_power",
-                 "formal": f"supply{i}",
-                 "actual": nm}
+                {"prefix": "global_power", "formal": f"supply{i}", "actual": nm}
             )
     logger.debug(f"Writing results in dir: {result_dir} {ckt_data}")
     with (result_dir / f"{design_name.upper()}.verilog.json").open("wt") as fp:
         json.dump(verilog_tbl, fp=fp, indent=2)
 
     logger.info("Completed topology identification.")
-    results_path = result_dir/design_name.upper()
+    results_path = result_dir / design_name.upper()
     logger.debug(f"OUTPUT verilog json netlist at: {results_path}.verilog.json")
     logger.debug(f"OUTPUT const file at: {results_path}.pnr.const.json")
 
 
 def exclude_const(subckt):
-    #Exclude constraints not to be exposed to PnR
-    exclude_const_list = ['DoNotIdentify', 'GroupBlocks', 'DoNotUseLib', 'ConfigureCompiler']
+    # Exclude constraints not to be exposed to PnR
+    exclude_const_list = [
+        "DoNotIdentify",
+        "GroupBlocks",
+        "DoNotUseLib",
+        "ConfigureCompiler",
+    ]
     remove_const = [c for c in subckt.constraints if c.constraint in exclude_const_list]
     logger.debug(f"removing annotation only constraints {remove_const}")
     for const in remove_const:

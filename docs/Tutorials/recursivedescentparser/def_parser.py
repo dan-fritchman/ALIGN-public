@@ -7,31 +7,33 @@ import collections
 
 # Token specification
 pats = []
-pats.append( r'(?P<SEMI>;)')
-pats.append( r'(?P<LPAREN>\()')
-pats.append( r'(?P<RPAREN>\))')
-pats.append( r'(?P<MINUS>\-)')
-pats.append( r'(?P<PLUS>\+)')
-pats.append( r'(?P<NAME>[a-zA-Z_][a-zA-Z_0-9]*)')
-pats.append( r'(?P<NUM>[-+]?\d*\.\d+|[-+]?\d+\.?)')
-pats.append( r'(?P<LIT>\".*\")')
-pats.append( r'(?P<WS>\s+)')
+pats.append(r"(?P<SEMI>;)")
+pats.append(r"(?P<LPAREN>\()")
+pats.append(r"(?P<RPAREN>\))")
+pats.append(r"(?P<MINUS>\-)")
+pats.append(r"(?P<PLUS>\+)")
+pats.append(r"(?P<NAME>[a-zA-Z_][a-zA-Z_0-9]*)")
+pats.append(r"(?P<NUM>[-+]?\d*\.\d+|[-+]?\d+\.?)")
+pats.append(r"(?P<LIT>\".*\")")
+pats.append(r"(?P<WS>\s+)")
 
-master_pat = re.compile('|'.join(pats))
+master_pat = re.compile("|".join(pats))
 
 # Tokenizer
-Token = collections.namedtuple('Token', ['type','value'])
+Token = collections.namedtuple("Token", ["type", "value"])
+
 
 def generate_tokens(text):
     scanner = master_pat.scanner(text)
     for m in iter(scanner.match, None):
         tok = Token(m.lastgroup, m.group())
-        if tok.type != 'WS':
+        if tok.type != "WS":
             yield tok
 
-# Parser 
+
+# Parser
 class DEFParser:
-    '''
+    """
     Implementation of a recursive descent parser for DEF.   Each method
     implements a single grammar rule.
 
@@ -40,53 +42,54 @@ class DEFParser:
     lookahead token if it matches the argument.
     Use the ._expect() method to exactly match and discard the next token on
     the input (or raise a SyntaxError if it doesn't match).
-    '''
+    """
 
-    def parse(self,text):
+    def parse(self, text):
         self.tokens = generate_tokens(text)
-        self.tok = None             # Last symbol consumed
-        self.nexttok = None         # Next symbol tokenized
-        self._advance()             # Load first lookahead token
+        self.tok = None  # Last symbol consumed
+        self.nexttok = None  # Next symbol tokenized
+        self._advance()  # Load first lookahead token
         return self.whole()
 
     def _advance(self):
-        'Advance one token ahead'
+        "Advance one token ahead"
         self.tok, self.nexttok = self.nexttok, next(self.tokens, None)
-#        print( self.tok, self.nexttok)
 
-    def _accept(self,toktype):
-        'Test and consume the next token if it matches toktype'
+    #        print( self.tok, self.nexttok)
+
+    def _accept(self, toktype):
+        "Test and consume the next token if it matches toktype"
         if self.nexttok and self.nexttok.type == toktype:
             self._advance()
             return True
         else:
             return False
 
-    def _accept_keyword(self,str):
-        'Test and consume the next token if it matches the keyword str'
-        if self.nexttok and self.nexttok.type == 'NAME' and self.nexttok.value == str:
+    def _accept_keyword(self, str):
+        "Test and consume the next token if it matches the keyword str"
+        if self.nexttok and self.nexttok.type == "NAME" and self.nexttok.value == str:
             self._advance()
             return True
         else:
             return False
 
-    def _expect(self,toktype):
-        'Consume next token if it matches toktype or raise SyntaxError'
+    def _expect(self, toktype):
+        "Consume next token if it matches toktype or raise SyntaxError"
         if not self._accept(toktype):
-            raise SyntaxError('Expected ' + toktype)
+            raise SyntaxError("Expected " + toktype)
 
-    def _expect_keyword(self,str):
-        'Consume next token if it matches argument or raise SyntaxError'
+    def _expect_keyword(self, str):
+        "Consume next token if it matches argument or raise SyntaxError"
         if not self._accept_keyword(str):
-            raise SyntaxError('Expected keyword' + str)
+            raise SyntaxError("Expected keyword" + str)
 
     # Grammar rules follow
 
     def point(self):
-        self._expect( 'LPAREN')
-        self._expect( 'NUM')
-        self._expect( 'NUM')
-        self._expect( 'RPAREN')
+        self._expect("LPAREN")
+        self._expect("NUM")
+        self._expect("NUM")
+        self._expect("RPAREN")
 
     def rect(self):
         self.point()
@@ -95,116 +98,121 @@ class DEFParser:
     def whole(self):
 
         while True:
-            if self._accept_keyword('END'):
-                self._accept_keyword('DESIGN')
+            if self._accept_keyword("END"):
+                self._accept_keyword("DESIGN")
                 break
-            elif self._accept_keyword( 'VERSION'): 
-                self._expect('NUM')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'BUSBITCHARS'):
-                self._expect('LIT')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'DIVIDERCHAR'):
-                self._expect('LIT')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'DESIGN'):
-                self._expect('NAME')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'UNITS'):
-                self._expect('NAME')
-                self._expect('NAME')
-                self._expect('NUM')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'PROPERTYDEFINITIONS'):
+            elif self._accept_keyword("VERSION"):
+                self._expect("NUM")
+                self._expect("SEMI")
+            elif self._accept_keyword("BUSBITCHARS"):
+                self._expect("LIT")
+                self._expect("SEMI")
+            elif self._accept_keyword("DIVIDERCHAR"):
+                self._expect("LIT")
+                self._expect("SEMI")
+            elif self._accept_keyword("DESIGN"):
+                self._expect("NAME")
+                self._expect("SEMI")
+            elif self._accept_keyword("UNITS"):
+                self._expect("NAME")
+                self._expect("NAME")
+                self._expect("NUM")
+                self._expect("SEMI")
+            elif self._accept_keyword("PROPERTYDEFINITIONS"):
                 while True:
-                    if self._accept_keyword('END'):
-                        self._accept_keyword('PROPERTYDEFINITIONS')
+                    if self._accept_keyword("END"):
+                        self._accept_keyword("PROPERTYDEFINITIONS")
                         break
-                    elif self._accept_keyword( 'DESIGN'):
-                        self._expect('NAME')
-                        if self._accept_keyword( 'STRING'):
-                            self._expect( 'LIT')
-                        elif self._accept_keyword( 'INTEGER'):
-                            self._expect('NUM')
+                    elif self._accept_keyword("DESIGN"):
+                        self._expect("NAME")
+                        if self._accept_keyword("STRING"):
+                            self._expect("LIT")
+                        elif self._accept_keyword("INTEGER"):
+                            self._expect("NUM")
                         else:
-                            raise SyntaxError('Expected STRING or INTEGER keywords')
-                        self._expect('SEMI')
+                            raise SyntaxError("Expected STRING or INTEGER keywords")
+                        self._expect("SEMI")
                     else:
-                        raise SyntaxError('Expected END or MACRO keywords')
-            elif self._accept_keyword( 'DIEAREA'):
+                        raise SyntaxError("Expected END or MACRO keywords")
+            elif self._accept_keyword("DIEAREA"):
                 self.rect()
-                self._expect( 'SEMI')
+                self._expect("SEMI")
 
-            elif self._accept_keyword( 'PINS'):
-                self._expect('NUM')
+            elif self._accept_keyword("PINS"):
+                self._expect("NUM")
                 pinCount = int(self.tok.value)
-                self._expect('SEMI')
+                self._expect("SEMI")
 
                 pins = []
                 while True:
-                    if self._accept_keyword( 'END'):
+                    if self._accept_keyword("END"):
                         assert len(pins) == pinCount
-                        self._expect_keyword('PINS')
+                        self._expect_keyword("PINS")
                         break
-                    elif self._accept( 'MINUS'):
-                        self._expect('NAME')
-                        pins.append( self.tok.value)
-                        self._expect('PLUS')
-                        self._expect_keyword( 'NET')
-                        self._expect('NAME')
-                        while self._accept( 'PLUS'):
-                            if self._accept_keyword( 'DIRECTION'):
-                                self._expect('NAME')    
-                            elif self._accept_keyword( 'PORT'):
-                                while self._accept( 'PLUS'):
-                                    if self._accept_keyword( 'LAYER'):
-                                        self._expect('NAME')    
+                    elif self._accept("MINUS"):
+                        self._expect("NAME")
+                        pins.append(self.tok.value)
+                        self._expect("PLUS")
+                        self._expect_keyword("NET")
+                        self._expect("NAME")
+                        while self._accept("PLUS"):
+                            if self._accept_keyword("DIRECTION"):
+                                self._expect("NAME")
+                            elif self._accept_keyword("PORT"):
+                                while self._accept("PLUS"):
+                                    if self._accept_keyword("LAYER"):
+                                        self._expect("NAME")
                                         self.rect()
-                                    elif self._accept_keyword( 'PLACED'):
+                                    elif self._accept_keyword("PLACED"):
                                         self.point()
-                                        self._expect( 'NAME')
-                                        self._expect( 'SEMI')
+                                        self._expect("NAME")
+                                        self._expect("SEMI")
                                     else:
-                                        raise SyntaxError('Expected LAYER or PLACED keywords.')     
-            elif self._accept_keyword( 'BLOCKAGES'):
-                self._expect('NUM')
+                                        raise SyntaxError(
+                                            "Expected LAYER or PLACED keywords."
+                                        )
+            elif self._accept_keyword("BLOCKAGES"):
+                self._expect("NUM")
                 blockageCount = int(self.tok.value)
-                self._expect('SEMI')
+                self._expect("SEMI")
                 blockages = []
 
                 while True:
-                    if self._accept_keyword( 'END'):
+                    if self._accept_keyword("END"):
                         assert len(blockages) == blockageCount
-                        self._expect_keyword('BLOCKAGES')
+                        self._expect_keyword("BLOCKAGES")
                         break
-                    elif self._accept( 'MINUS'):
-                        self._expect_keyword('LAYER')
-                        self._expect( 'NAME')
-                        blockages.append( self.tok.value)
-                        self._expect_keyword( 'RECT')
+                    elif self._accept("MINUS"):
+                        self._expect_keyword("LAYER")
+                        self._expect("NAME")
+                        blockages.append(self.tok.value)
+                        self._expect_keyword("RECT")
                         self.rect()
-                        self._expect( 'SEMI')
-            elif self._accept_keyword( 'NETS'):
-                self._expect('NUM')
+                        self._expect("SEMI")
+            elif self._accept_keyword("NETS"):
+                self._expect("NUM")
                 netCount = int(self.tok.value)
-                self._expect('SEMI')
+                self._expect("SEMI")
 
                 nets = []
                 while True:
-                    if self._accept_keyword( 'END'):
+                    if self._accept_keyword("END"):
                         assert len(nets) == netCount
-                        self._expect_keyword('NETS')
+                        self._expect_keyword("NETS")
                         break
-                    elif self._accept( 'MINUS'):
-                        self._expect('NAME')
-                        nets.append( self.tok.value)
-                        self._expect( 'LPAREN')
-                        self._expect_keyword( 'PIN')
-                        self._expect('NAME')
-                        self._expect( 'RPAREN')
-                        self._expect( 'SEMI')
-            else:                        
-                raise SyntaxError( 'Expected PROPERTYDEFINITIONS, DIEAREA, PINS, BLOCKAGES or NETS keywords')
+                    elif self._accept("MINUS"):
+                        self._expect("NAME")
+                        nets.append(self.tok.value)
+                        self._expect("LPAREN")
+                        self._expect_keyword("PIN")
+                        self._expect("NAME")
+                        self._expect("RPAREN")
+                        self._expect("SEMI")
+            else:
+                raise SyntaxError(
+                    "Expected PROPERTYDEFINITIONS, DIEAREA, PINS, BLOCKAGES or NETS keywords"
+                )
+
 
 def test_def():
     str = """VERSION 5.7 ;
@@ -257,5 +265,4 @@ END NETS
 END DESIGN
 """
     p = DEFParser()
-    p.parse( str)
-
+    p.parse(str)

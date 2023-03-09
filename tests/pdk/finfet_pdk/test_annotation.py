@@ -5,32 +5,35 @@ from .utils import get_test_id, build_example, run_example
 
 
 def test_dcl():
-    name = f'ckt_{get_test_id()}'
-    netlist = textwrap.dedent(f"""\
+    name = f"ckt_{get_test_id()}"
+    netlist = textwrap.dedent(
+        f"""\
         .subckt {name} vbias2 vccx
         mp29     v4 vbias2 v2     vccx p w=2.16e-6 m=1 nf=12
         mp33 vbias2 vbias2 vbias1 vccx p w=1.44e-6 m=1 nf=8
         .ends {name}
-        """)
-    constraints = [
-        {"constraint": "PowerPorts", "ports": ["vccx"]}
-    ]
+        """
+    )
+    constraints = [{"constraint": "PowerPorts", "ports": ["vccx"]}]
     example = build_example(name, netlist, constraints)
     ckt_dir, run_dir = run_example(example, cleanup=False)
 
-    with (run_dir / '1_topology' / '__primitives_library__.json').open('rt') as fp:
+    with (run_dir / "1_topology" / "__primitives_library__.json").open("rt") as fp:
         primitives = json.load(fp)
         for primitive in primitives:
-            if 'generator' in primitive:
-                assert primitive["name"].startswith('PMOS') or primitive["name"].startswith('DCL'), f"Incorrect subcircuit identification {primitive}"
+            if "generator" in primitive:
+                assert primitive["name"].startswith("PMOS") or primitive[
+                    "name"
+                ].startswith("DCL"), f"Incorrect subcircuit identification {primitive}"
 
     shutil.rmtree(run_dir)
     shutil.rmtree(ckt_dir)
 
 
 def test_remove_intermediate_hierarchy():
-    name = f'ckt_{get_test_id()}'
-    netlist = textwrap.dedent(f"""\
+    name = f"ckt_{get_test_id()}"
+    netlist = textwrap.dedent(
+        f"""\
     .subckt sub0 i o vccx vssx
     mp0 o i vccx vccx p w=180e-9 m=1 nf=2
     mn0 o i vssx vssx n w=180e-9 m=1 nf=2
@@ -44,10 +47,13 @@ def test_remove_intermediate_hierarchy():
     xi2 v2 vo vccx vssx sub1
     .ends {name}
     .END
-    """)
+    """
+    )
     constraints = []
     example = build_example(name, netlist, constraints)
-    ckt_dir, run_dir = run_example(example, cleanup=False, additional_args=["--flow_stop", "2_primitives"])
+    ckt_dir, run_dir = run_example(
+        example, cleanup=False, additional_args=["--flow_stop", "2_primitives"]
+    )
     name = name.upper()
     with (run_dir / "1_topology" / f"{name}.verilog.json").open("rt") as fp:
         hierarchy = json.load(fp)

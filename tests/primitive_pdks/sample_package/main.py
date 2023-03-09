@@ -1,5 +1,4 @@
-
-class a_class():
+class a_class:
     pass
 
 

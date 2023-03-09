@@ -3,8 +3,10 @@ from cktgen.cktgen import *
 import io
 import pathlib
 
+
 def get_tech():
-    with io.StringIO("""{
+    with io.StringIO(
+        """{
     "pitchDG" : 720,
     "dgPerRow" :  6,
     "pitchPoly" : 720,
@@ -68,14 +70,17 @@ def get_tech():
                   }
     ]
 }
-""") as fp:
-        return techfile.TechFile( fp)
+"""
+    ) as fp:
+        return techfile.TechFile(fp)
+
 
 def test_A():
 
     tech = get_tech()
 
-    with io.StringIO("""Cell mydesign bbox=0:0:51840:51840
+    with io.StringIO(
+        """Cell mydesign bbox=0:0:51840:51840
 
 Wire net=i0 gid=1 layer=metal1 rect=1960:47880:2360:51480
 Wire net=i0 gid=4 layer=metal1 rect=49480:39240:49880:42840
@@ -971,20 +976,24 @@ Wire net=z layer=nwell rect=47520:34560:51840:38880
 Wire net=z layer=nwell rect=47520:38880:51840:43200
 Wire net=z layer=nwell rect=47520:43200:51840:47520
 Wire net=z layer=nwell rect=47520:47520:51840:51840
-""") as fp:
-        netl = parse_lgf( fp)
+"""
+    ) as fp:
+        netl = parse_lgf(fp)
+
 
 def test_AA():
 
     tech = get_tech()
 
-    with io.StringIO("""Cell mydesign bbox=0:0:51840:51840
+    with io.StringIO(
+        """Cell mydesign bbox=0:0:51840:51840
 
 Wire net=i0 gid=1 layer=metal1 rect=1960:47880:2360:51480
 Obj net=i0 gen=via1_simple x=2160 y=49680
 Wire net=i1 layer=metal2 rect=1960:43560:2360:47160
-""") as fp:
-        netl = parse_lgf( fp)
+"""
+    ) as fp:
+        netl = parse_lgf(fp)
         assert netl.bbox.llx == 0
         assert netl.bbox.lly == 0
         assert netl.bbox.urx == 51840
@@ -997,26 +1006,29 @@ Wire net=i1 layer=metal2 rect=1960:43560:2360:47160
         assert r.urx == 2360
         assert r.ury == 51480
 
+
 def test_AB():
 
     tech = get_tech()
 
-    with io.StringIO("""Cell mydesign bbox=0:0:51840:51840
+    with io.StringIO(
+        """Cell mydesign bbox=0:0:51840:51840
 
 Wire net=i0 gid=1 layer=metal1 rect=1960:47880:2360:51480
 Obj net=i0 gen=via1_simple x=2160 y=49680
 Wire net=i1 layer=metal2 rect=1960:43560:2360:47160
-""") as fp:
-        netl = parse_lgf( fp)
+"""
+    ) as fp:
+        netl = parse_lgf(fp)
         assert netl.nets["i1"].wires[0].layer == "metal2"
         assert netl.nets["i1"].wires[0].gid is None
-
 
 
 def test_B():
     tech = get_tech()
 
-    with io.StringIO("""Cell mydesign bbox=0:0:43200:43200
+    with io.StringIO(
+        """Cell mydesign bbox=0:0:43200:43200
 
 Wire net=i layer=metal1 rect=36520:34920:36920:38520 gid=4
 Wire net=i layer=metal1 rect=6280:4680:6680:8280 gid=1
@@ -1193,13 +1205,16 @@ Wire net=z layer=nwell rect=38880:25920:43200:30240
 Wire net=z layer=nwell rect=38880:30240:43200:34560
 Wire net=z layer=nwell rect=38880:34560:43200:38880
 Wire net=z layer=nwell rect=38880:38880:43200:43200
-""") as fp:
-        netl = parse_lgf( fp)
+"""
+    ) as fp:
+        netl = parse_lgf(fp)
+
 
 def test_BA():
     tech = get_tech()
 
-    with io.StringIO("""Cell mydesign bbox=0:1:2:3
+    with io.StringIO(
+        """Cell mydesign bbox=0:1:2:3
 
 Wire net=i layer=metal1 rect=0:1:2:3 gid=4
 Wire net=i layer=metal2 rect=10:11:12:13
@@ -1208,13 +1223,14 @@ Obj net=i gen=via1_simple x=6480 y=6480 {
   Wire net=i layer=metal1 rect=6280:6120:6680:6840
   Wire net=i layer=metal2 rect=6120:6280:6840:6680
 }
-""") as fp:
-        netl = parse_lgf( fp)
-        assert netl.nets['i'].wires[0].layer == "metal1"
-        assert netl.nets['i'].wires[1].layer == "metal2"
-        r = netl.nets['i'].wires[0].rect
-        assert (r.llx,r.lly,r.urx,r.ury) == (0,1,2,3)
-        r = netl.nets['i'].wires[1].rect
-        assert (r.llx,r.lly,r.urx,r.ury) == (10,11,12,13)
-        assert netl.nets['i'].wires[0].gid == 4
-        assert netl.nets['i'].wires[1].gid is None
+"""
+    ) as fp:
+        netl = parse_lgf(fp)
+        assert netl.nets["i"].wires[0].layer == "metal1"
+        assert netl.nets["i"].wires[1].layer == "metal2"
+        r = netl.nets["i"].wires[0].rect
+        assert (r.llx, r.lly, r.urx, r.ury) == (0, 1, 2, 3)
+        r = netl.nets["i"].wires[1].rect
+        assert (r.llx, r.lly, r.urx, r.ury) == (10, 11, 12, 13)
+        assert netl.nets["i"].wires[0].gid == 4
+        assert netl.nets["i"].wires[1].gid is None

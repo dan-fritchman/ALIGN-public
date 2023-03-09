@@ -5,240 +5,276 @@ from collections import namedtuple
 from collections import OrderedDict
 import json
 
-Point = namedtuple('Point', ['x', 'y'])
-Rect = namedtuple('Rect', ['ll', 'ur'])
-Port = namedtuple('Port', ['port_nm', 'layer', 'rect'])
-Blockage = namedtuple('Blockage', ['layer', 'rect'])
-Terminal = namedtuple('Terminal', ['net_nm', 'layer'])
+Point = namedtuple("Point", ["x", "y"])
+Rect = namedtuple("Rect", ["ll", "ur"])
+Port = namedtuple("Port", ["port_nm", "layer", "rect"])
+Blockage = namedtuple("Blockage", ["layer", "rect"])
+Terminal = namedtuple("Terminal", ["net_nm", "layer"])
+
 
 class Placement:
-    def __init__( self):
+    def __init__(self):
         self.die = None
         self.block_placement = OrderedDict()
         self.net_wire_lengths = []
 
-    def __repr__( self):
-        return 'Placement(' + str(self.die) + "," + str(self.block_placement) + "," + str(self.net_wire_lengths) + ')'
+    def __repr__(self):
+        return (
+            "Placement("
+            + str(self.die)
+            + ","
+            + str(self.block_placement)
+            + ","
+            + str(self.net_wire_lengths)
+            + ")"
+        )
 
-
-    def semantic( self):
+    def semantic(self):
         assert self.die is not None
         assert self.die.ll.x <= self.die.ur.x
         assert self.die.ll.y <= self.die.ur.y
 
+    def parse(self, fp):
+        p_comment = re.compile(r"^#.*$")
+        p_blank = re.compile(r"^\s*$")
+        p_die = re.compile(
+            r"^DIE\s*"
+            r"{\s*(-?\d+)\s*,\s*(-?\d+)\s*}"
+            r"\s*"
+            r"{\s*(-?\d+)\s*,\s*(-?\d+)\s*}"
+            r"\s*$"
+        )
 
-    def parse( self, fp):
-        p_comment = re.compile( r'^#.*$')
-        p_blank = re.compile( r'^\s*$')
-        p_die = re.compile( r'^DIE\s*'
-                            r'{\s*(-?\d+)\s*,\s*(-?\d+)\s*}'
-                            r'\s*'
-                            r'{\s*(-?\d+)\s*,\s*(-?\d+)\s*}'
-                            r'\s*$')
-
-        p_triple = re.compile( r'^(\S+)\s+(\S+)\s+(\S+)\s*$')
-        p_quadruple = re.compile( r'^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$')
+        p_triple = re.compile(r"^(\S+)\s+(\S+)\s+(\S+)\s*$")
+        p_quadruple = re.compile(r"^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$")
 
         for line in fp:
-            line = line.rstrip( '\n')
+            line = line.rstrip("\n")
             m = p_comment.match(line)
-            if m: continue
+            if m:
+                continue
             m = p_blank.match(line)
-            if m: continue
+            if m:
+                continue
             m = p_die.match(line)
             if m:
-                self.die = Rect( Point( int(m.groups()[0]), int(m.groups()[1])), Point( int(m.groups()[2]), int(m.groups()[3])))
+                self.die = Rect(
+                    Point(int(m.groups()[0]), int(m.groups()[1])),
+                    Point(int(m.groups()[2]), int(m.groups()[3])),
+                )
                 continue
             m = p_triple.match(line)
             if m:
-                self.net_wire_lengths.append( ( m.groups()[0], Point( int(m.groups()[1]), int(m.groups()[2]))))
+                self.net_wire_lengths.append(
+                    (m.groups()[0], Point(int(m.groups()[1]), int(m.groups()[2])))
+                )
                 continue
             m = p_quadruple.match(line)
             if m:
-                self.block_placement[m.groups()[0]] = ( m.groups()[0], Point( int(m.groups()[1]), int(m.groups()[2])), m.groups()[3])
+                self.block_placement[m.groups()[0]] = (
+                    m.groups()[0],
+                    Point(int(m.groups()[1]), int(m.groups()[2])),
+                    m.groups()[3],
+                )
                 continue
             assert False, line
 
+
 class Constraint:
-    def __init__( self):
+    def __init__(self):
         pass
 
 
 class SymmNet(Constraint):
-    def __init__( self):
+    def __init__(self):
         pass
 
-    def __repr__( self):
-        return "SymmNet(" + str( self.lst0) + "," + str( self.lst1) + ")"
+    def __repr__(self):
+        return "SymmNet(" + str(self.lst0) + "," + str(self.lst1) + ")"
 
-    def semantic( self):
+    def semantic(self):
         assert len(self.lst0) >= 2
         assert len(self.lst1) >= 2
 
+
 class CritNet(Constraint):
-    def __init__( self):
+    def __init__(self):
         pass
 
-    def __repr__( self):
+    def __repr__(self):
         return "CritNet(" + self.net_nm + "," + self.level + ")"
 
-    def semantic( self):
-        assert self.level in ['mid','min']
+    def semantic(self):
+        assert self.level in ["mid", "min"]
+
 
 class ShieldNet(Constraint):
-    def __init__( self):
+    def __init__(self):
         pass
 
-    def __repr__( self):
+    def __repr__(self):
         return "ShieldNet(" + ")"
 
-    def semantic( self):
+    def semantic(self):
         pass
 
 
 class MatchBlock(Constraint):
-    def __init__( self):
+    def __init__(self):
         pass
 
-    def __repr__( self):
+    def __repr__(self):
         return "MatchBlock(" + ")"
 
-    def semantic( self):
+    def semantic(self):
         pass
 
 
 class Constraints:
-    def __init__( self):
+    def __init__(self):
         self.constraints = []
 
-    def __repr__( self):
-        return ','.join( [ str(x) for x in self.constraints])
+    def __repr__(self):
+        return ",".join([str(x) for x in self.constraints])
 
-    def semantic( self):
+    def semantic(self):
         for c in self.constraints:
             c.semantic()
 
-    def parse( self, fp):
-        p_comment = re.compile( r'^#.*$')
-        p_blank = re.compile( r'^\s*$')
-        p_constraint = re.compile( r'^(SymmNet|CritNet|ShieldNet|MatchBlock)'
-                                   r'\s*\('
-                                   r'(.*)'
-                                   r'\)\s*$')
+    def parse(self, fp):
+        p_comment = re.compile(r"^#.*$")
+        p_blank = re.compile(r"^\s*$")
+        p_constraint = re.compile(
+            r"^(SymmNet|CritNet|ShieldNet|MatchBlock)" r"\s*\(" r"(.*)" r"\)\s*$"
+        )
 
-        p_bracecommasep = re.compile( r'^{(.+)}\s*,\s*{(.+)}$')
-        p_commasep = re.compile( r'^(\S+)\s*,\s*(\S+)$')
-        p_pin = re.compile( r'^(.+)/(.+)$')
+        p_bracecommasep = re.compile(r"^{(.+)}\s*,\s*{(.+)}$")
+        p_commasep = re.compile(r"^(\S+)\s*,\s*(\S+)$")
+        p_pin = re.compile(r"^(.+)/(.+)$")
 
-
-        def toLst( s):
-            lst = s.split(',')
+        def toLst(s):
+            lst = s.split(",")
             assert len(lst) >= 2, lst
             result = lst[0:1]
             for e in lst[1:]:
-                m = p_pin.match( e)
+                m = p_pin.match(e)
                 if m:
                     block_nm = m.groups()[0]
                     formal_nm = m.groups()[1]
-                    result.append( ( block_nm, formal_nm))
+                    result.append((block_nm, formal_nm))
                     continue
-                result.append( ( 'terminal', e))
+                result.append(("terminal", e))
             return result
 
-
         for line in fp:
-            line = line.rstrip( '\n')
+            line = line.rstrip("\n")
 
             m = p_comment.match(line)
-            if m: continue
+            if m:
+                continue
             m = p_blank.match(line)
-            if m: continue
+            if m:
+                continue
             m = p_constraint.match(line)
             if m:
                 tag = m.groups()[0]
-                rest = m.groups()[1].strip( ' ')
-                if   tag == 'SymmNet':
+                rest = m.groups()[1].strip(" ")
+                if tag == "SymmNet":
                     c = SymmNet()
 
-                    mm = p_bracecommasep.match( rest)
+                    mm = p_bracecommasep.match(rest)
                     assert mm, rest
 
-                    c.lst0 = toLst( mm.groups()[0])
-                    c.lst1 = toLst( mm.groups()[1])
+                    c.lst0 = toLst(mm.groups()[0])
+                    c.lst1 = toLst(mm.groups()[1])
 
-                elif tag == 'CritNet':
+                elif tag == "CritNet":
                     c = CritNet()
 
-                    mm = p_commasep.match( rest)
+                    mm = p_commasep.match(rest)
                     assert mm, rest
 
                     c.net_nm = mm.groups()[0]
                     c.level = mm.groups()[1]
 
-                elif tag == 'ShieldNet':
+                elif tag == "ShieldNet":
                     c = ShieldNet()
                     pass
-                elif tag == 'MatchBlock':
+                elif tag == "MatchBlock":
                     c = MatchBlock()
                     pass
                 else:
                     assert False
 
-                self.constraints.append( c)
+                self.constraints.append(c)
 
                 continue
 
             assert False, line
 
 
-
 class Net:
-    def __init__( self):
+    def __init__(self):
         self.net_nm = None
         self.pin_count = None
         self.pin_lst = []
 
-    def __repr__( self):
-        return "Net(" + self.net_nm + "," + str(self.pin_count) + "," + str(self.pin_lst) + ")"
+    def __repr__(self):
+        return (
+            "Net("
+            + self.net_nm
+            + ","
+            + str(self.pin_count)
+            + ","
+            + str(self.pin_lst)
+            + ")"
+        )
+
 
 class Netlist:
-    def __init__( self):
+    def __init__(self):
         self.params = OrderedDict()
         self.nets = OrderedDict()
 
         self.pins = {}
 
-
-    def __repr__( self):
+    def __repr__(self):
         return "Netlist(" + str(self.params) + "," + str(self.nets) + ")"
 
-    def semantic( self):
-        assert self.params['NumNets'] == len(self.nets)
-        nPins = sum( [ len([ x for x in v.pin_lst if x[0] != 'terminal']) for (k,v) in self.nets.items()])
-        assert self.params['NumPins'] == nPins, (self.params['NumPins'], nPins)
-        for (k,v) in self.nets.items():
+    def semantic(self):
+        assert self.params["NumNets"] == len(self.nets)
+        nPins = sum(
+            [
+                len([x for x in v.pin_lst if x[0] != "terminal"])
+                for (k, v) in self.nets.items()
+            ]
+        )
+        assert self.params["NumPins"] == nPins, (self.params["NumPins"], nPins)
+        for (k, v) in self.nets.items():
             assert v.pin_count is not None, k
             assert v.pin_count == len(v.pin_lst), (k, v.pin_count, len(v.pin_lst))
 
             for pin in v.pin_lst:
-                assert pin not in self.pins, (k, pin,'not in',self.pins)
+                assert pin not in self.pins, (k, pin, "not in", self.pins)
                 self.pins[pin] = k
 
-    def parse( self, fp):
-        p_comment = re.compile( r'^#.*$')
-        p_blank = re.compile( r'^\s*$')
-        p_assignments = re.compile( r'^(NumNets|NumPins)\s*:\s*(\d+)\s*$')
-        p_net_and_count = re.compile( r'^(\S+)\s*:\s*(\d+)\s*$')
-        p_pairs = re.compile( r'^(\S+)\s+(\S+)\s*$')
+    def parse(self, fp):
+        p_comment = re.compile(r"^#.*$")
+        p_blank = re.compile(r"^\s*$")
+        p_assignments = re.compile(r"^(NumNets|NumPins)\s*:\s*(\d+)\s*$")
+        p_net_and_count = re.compile(r"^(\S+)\s*:\s*(\d+)\s*$")
+        p_pairs = re.compile(r"^(\S+)\s+(\S+)\s*$")
 
         net = None
         for line in fp:
-            line = line.rstrip( '\n')
+            line = line.rstrip("\n")
 
             m = p_comment.match(line)
-            if m: continue
+            if m:
+                continue
             m = p_blank.match(line)
-            if m: continue
+            if m:
+                continue
             m = p_assignments.match(line)
             if m:
                 self.params[m.groups()[0]] = int(m.groups()[1])
@@ -252,87 +288,111 @@ class Netlist:
                 continue
             m = p_pairs.match(line)
             if m:
-                net.pin_lst.append( (m.groups()[0], m.groups()[1]))
+                net.pin_lst.append((m.groups()[0], m.groups()[1]))
                 continue
             assert False, line
-            
+
 
 class Block:
-    def __init__( self, nm):
+    def __init__(self, nm):
         self.nm = nm
         self.rect = None
         self.port_count = None
         self.port_lst = []
         self.blockage_lst = []
 
-    def __repr__( self):
-        return 'Block(' + self.nm + "," + str(self.port_count) + "," + str(self.port_lst) + ')'
+    def __repr__(self):
+        return (
+            "Block("
+            + self.nm
+            + ","
+            + str(self.port_count)
+            + ","
+            + str(self.port_lst)
+            + ")"
+        )
 
-    def semantic( self):
+    def semantic(self):
         assert self.port_count is not None
-        assert self.port_count == len(self.port_lst), (self.port_count, len(self.port_lst))
+        assert self.port_count == len(self.port_lst), (
+            self.port_count,
+            len(self.port_lst),
+        )
+
 
 class Blocks:
-    def __init__( self):
+    def __init__(self):
         self.params = {}
         self.block_lst = OrderedDict()
         self.terminal_lst = []
-    
-    def __repr__( self):
-        return 'Blocks(' + str(self.params) + "," + str(self.block_lst) + "," + str(self.terminal_lst) + ')'
 
-    def semantic( self):
-        assert self.params['NumSoftRectangularBlocks'] == 0
-        assert self.params['NumHardRectilinearBlocks'] == len(self.block_lst)
-        assert self.params['NumTerminals'] == len(self.terminal_lst)
-        for (k,v) in self.block_lst.items():
+    def __repr__(self):
+        return (
+            "Blocks("
+            + str(self.params)
+            + ","
+            + str(self.block_lst)
+            + ","
+            + str(self.terminal_lst)
+            + ")"
+        )
+
+    def semantic(self):
+        assert self.params["NumSoftRectangularBlocks"] == 0
+        assert self.params["NumHardRectilinearBlocks"] == len(self.block_lst)
+        assert self.params["NumTerminals"] == len(self.terminal_lst)
+        for (k, v) in self.block_lst.items():
             v.semantic()
 
-    def parse( self, fp):
-        p_comment = re.compile( r'^#.*$')
-        p_blank = re.compile( r'^\s*$')
+    def parse(self, fp):
+        p_comment = re.compile(r"^#.*$")
+        p_blank = re.compile(r"^\s*$")
 
-        p_assignments = re.compile( r'^(NumSoftRectangularBlocks|NumHardRectilinearBlocks|NumTerminals)\s*:\s*(\d+)\s*$')
+        p_assignments = re.compile(
+            r"^(NumSoftRectangularBlocks|NumHardRectilinearBlocks|NumTerminals)\s*:\s*(\d+)\s*$"
+        )
 
-        p_outline = re.compile( r'^(\S+)\s+(hardrectilinear)\s+'
-                                r'(\d+)\s+'
-                                r'((\(\s*(-?\d+)\s*\,\s*(-?\d+)\s*\)\s*)*)'
-                                r'$')
+        p_outline = re.compile(
+            r"^(\S+)\s+(hardrectilinear)\s+"
+            r"(\d+)\s+"
+            r"((\(\s*(-?\d+)\s*\,\s*(-?\d+)\s*\)\s*)*)"
+            r"$"
+        )
 
+        p_block = re.compile(r"^BLOCK\s+(\S+)\s*:\s*(\d+)\s*$")
 
-        p_block = re.compile( r'^BLOCK\s+(\S+)\s*:\s*(\d+)\s*$')
+        p_port = re.compile(
+            r"^(\S+)\s+(\S+)\s+" r"((\(\s*(-?\d+)\s*\,\s*(-?\d+)\s*\)\s*){4})" r"$"
+        )
 
-        p_port = re.compile( r'^(\S+)\s+(\S+)\s+'
-                            r'((\(\s*(-?\d+)\s*\,\s*(-?\d+)\s*\)\s*){4})'
-                            r'$')
+        p_terminal = re.compile(r"^(\S+)\s+(\S+)\s+terminal\s*$")
 
-        p_terminal = re.compile( r'^(\S+)\s+(\S+)\s+terminal\s*$')
+        p_pair = re.compile(r"^\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)(.*)$")
 
-
-        p_pair = re.compile( r'^\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)(.*)$')
-
-        def parse_pair_list( s):
+        def parse_pair_list(s):
             result = []
             rest = s
             while True:
-                m = p_blank.match( rest)
-                if m: return result
-                m = p_pair.match( rest)
+                m = p_blank.match(rest)
+                if m:
+                    return result
+                m = p_pair.match(rest)
                 assert m, rest
                 x = int(m.groups()[0])
                 y = int(m.groups()[1])
                 rest = m.groups()[2]
-                result.append( Point(x=x,y=y))
-
+                result.append(Point(x=x, y=y))
 
         block = None
         if True:
             for line in fp:
-                line = line.rstrip('\n')
+                line = line.rstrip("\n")
                 m = p_comment.match(line)
-                if m: continue
+                if m:
+                    continue
                 m = p_blank.match(line)
-                if m: continue
+                if m:
+                    continue
                 m = p_assignments.match(line)
                 if m:
                     self.params[m.groups()[0]] = int(m.groups()[1])
@@ -340,14 +400,14 @@ class Blocks:
                 m = p_outline.match(line)
                 if m:
                     block_nm = m.groups()[0]
-                    block = Block( block_nm)
+                    block = Block(block_nm)
                     type_nm = m.groups()[1]
                     point_count = int(m.groups()[2])
-                    point_lst = parse_pair_list( m.groups()[3])
+                    point_lst = parse_pair_list(m.groups()[3])
                     assert point_count == len(point_lst)
                     assert point_count == 4
 
-                    rect = Rect( ll=point_lst[0], ur=point_lst[2])
+                    rect = Rect(ll=point_lst[0], ur=point_lst[2])
 
                     for p in point_lst:
                         assert rect.ll.x <= p.x
@@ -373,37 +433,38 @@ class Blocks:
                 if m:
                     port_nm = m.groups()[0]
                     layer = m.groups()[1]
-                    point_lst = parse_pair_list( m.groups()[2])
+                    point_lst = parse_pair_list(m.groups()[2])
                     assert len(point_lst) == 4
 
-                    rect = Rect( ll=point_lst[0], ur=point_lst[2])
+                    rect = Rect(ll=point_lst[0], ur=point_lst[2])
 
                     for p in point_lst:
                         pass
-#                        assert rect.ll.x <= p.x, (p, 'should be inside', rect)
-#                        assert rect.ll.y <= p.y, (p, 'should be inside', rect)
-#                        assert rect.ur.x >= p.x, (p, 'should be inside', rect)
-#                        assert rect.ur.y >= p.y, (p, 'should be inside', rect)
+                    #                        assert rect.ll.x <= p.x, (p, 'should be inside', rect)
+                    #                        assert rect.ll.y <= p.y, (p, 'should be inside', rect)
+                    #                        assert rect.ur.x >= p.x, (p, 'should be inside', rect)
+                    #                        assert rect.ur.y >= p.y, (p, 'should be inside', rect)
 
-
-                    if port_nm == 'INT':
-                        blockage = Blockage( layer, rect)
-                        block.blockage_lst.append( port)
+                    if port_nm == "INT":
+                        blockage = Blockage(layer, rect)
+                        block.blockage_lst.append(port)
                     else:
-                        port = Port( port_nm, layer, rect)
-                        block.port_lst.append( port)
+                        port = Port(port_nm, layer, rect)
+                        block.port_lst.append(port)
 
                     continue
                 m = p_terminal.match(line)
                 if m:
                     net_nm = m.groups()[0]
                     layer = m.groups()[1]
-                    self.terminal_lst.append( Terminal( net_nm, layer))
+                    self.terminal_lst.append(Terminal(net_nm, layer))
                     continue
 
                 assert False, line
 
+
 import io
+
 
 def test_n3():
     s = """#UMN blocks 1.0
@@ -459,8 +520,9 @@ net17	M1 terminal
 
     with io.StringIO(s) as fp:
         blocks = Blocks()
-        blocks.parse( fp)
+        blocks.parse(fp)
         blocks.semantic()
+
 
 def test_negative():
 
@@ -517,7 +579,7 @@ net17	M1 terminal
 
     with io.StringIO(s) as fp:
         blocks = Blocks()
-        blocks.parse( fp)
+        blocks.parse(fp)
         blocks.semantic()
 
 
@@ -543,7 +605,7 @@ INT M1 (412, 619) (412, 789) (452, 789)	(412, 789)
 
     with io.StringIO(s) as fp:
         blocks = Blocks()
-        blocks.parse( fp)
+        blocks.parse(fp)
         blocks.semantic()
 
 
@@ -584,9 +646,8 @@ terminal vdd!
 
     with io.StringIO(s) as fp:
         nl = Netlist()
-        nl.parse( fp)
+        nl.parse(fp)
         nl.semantic()
-    
 
 
 def test_consts():
@@ -598,9 +659,10 @@ CritNet ( net10 , mid )
 
     with io.StringIO(s) as fp:
         cs = Constraints()
-        cs.parse( fp)
+        cs.parse(fp)
         cs.semantic()
-        print( cs)
+        print(cs)
+
 
 def test_pl():
     s = """# TAMU blocks 1.0
@@ -620,155 +682,168 @@ vdd!	0	768
 
     with io.StringIO(s) as fp:
         p = Placement()
-        p.parse( fp)
+        p.parse(fp)
         p.semantic()
-        print( p)
+        print(p)
+
 
 class Design:
     def __init__(self):
         pass
 
-    def parse( self, ibasename, obasename):
-        with open( ibasename + '.blocks', 'rt') as fp:
+    def parse(self, ibasename, obasename):
+        with open(ibasename + ".blocks", "rt") as fp:
             self.blocks = Blocks()
-            self.blocks.parse( fp)
+            self.blocks.parse(fp)
             self.blocks.semantic()
 
-        with open( ibasename + '.nets', 'rt') as fp:
+        with open(ibasename + ".nets", "rt") as fp:
             self.nl = Netlist()
-            self.nl.parse( fp)
+            self.nl.parse(fp)
             self.nl.semantic()
 
-        with open( ibasename + '.const', 'rt') as fp:
+        with open(ibasename + ".const", "rt") as fp:
             self.cs = Constraints()
-            self.cs.parse( fp)
+            self.cs.parse(fp)
             self.cs.semantic()
 
-        with open( obasename + '.pl', 'rt') as fp:
+        with open(obasename + ".pl", "rt") as fp:
             self.p = Placement()
-            self.p.parse( fp)
+            self.p.parse(fp)
             self.p.semantic()
 
-    def write_json_for_viewer( self, fp):
+    def write_json_for_viewer(self, fp):
         """Write out bbox for instances as well as terminals
-Need:
-        bbox -- [llx,lly,urx,ury]
-        globalRoutes -- []
-        globalRouteGrid -- []
-        terminals -- each in array { 'netName': , 'layer': , 'gid': , 'rect': [llx,lly,urx,ury]} 
-"""
+        Need:
+                bbox -- [llx,lly,urx,ury]
+                globalRoutes -- []
+                globalRouteGrid -- []
+                terminals -- each in array { 'netName': , 'layer': , 'gid': , 'rect': [llx,lly,urx,ury]}"""
         d = {}
 
-        d['bbox'] = [self.p.die.ll.x, self.p.die.ll.y, self.p.die.ur.x, self.p.die.ur.y]
+        d["bbox"] = [self.p.die.ll.x, self.p.die.ll.y, self.p.die.ur.x, self.p.die.ur.y]
 
-        d['cellBoundaries'] = []
+        d["cellBoundaries"] = []
 
-        d['globalRoutes'] = []
-        d['globalRouteGrid'] = []
-        d['terminals'] = []
+        d["globalRoutes"] = []
+        d["globalRouteGrid"] = []
+        d["terminals"] = []
 
-        def translateLayer( layer):
-            if layer == 'M1':
-                return 'metal1'
+        def translateLayer(layer):
+            if layer == "M1":
+                return "metal1"
             else:
                 assert False, layer
 
         # fake terminal for diearea
         dd = {}
-        dd['netName'] = 'top'
-        dd['layer'] = 'diearea'
-        dd['gid'] = -1
-        dd['rect'] = d['bbox']
+        dd["netName"] = "top"
+        dd["layer"] = "diearea"
+        dd["gid"] = -1
+        dd["rect"] = d["bbox"]
 
-        d['terminals'].append( dd)
+        d["terminals"].append(dd)
 
-
-
-        for (nm,block) in self.blocks.block_lst.items():
+        for (nm, block) in self.blocks.block_lst.items():
             assert nm == block.nm
             plc = self.p.block_placement[block.nm]
             o = plc[1]
             flip = plc[2]
 
-            sx,sy = 1,1
-            if   flip == 'FN': # apparently means mirror across y axis; origin at top left
+            sx, sy = 1, 1
+            if (
+                flip == "FN"
+            ):  # apparently means mirror across y axis; origin at top left
                 sx = -1
-            elif flip == 'FS': # apparently means mirror across x axis; origin at bot right
+            elif (
+                flip == "FS"
+            ):  # apparently means mirror across x axis; origin at bot right
                 sy = -1
-            elif flip == 'S': # apparently means mirror across both x and y axes; origin at top right
-                sx,sy = -1,-1
-            elif flip == 'N': # no flip
+            elif (
+                flip == "S"
+            ):  # apparently means mirror across both x and y axes; origin at top right
+                sx, sy = -1, -1
+            elif flip == "N":  # no flip
                 pass
             else:
                 assert False, flip
 
-            def hit( x, y):
-                return x*sx+o.x, y*sy+o.y
+            def hit(x, y):
+                return x * sx + o.x, y * sy + o.y
 
-            def transformRect( r):
-                llx,lly = hit( r.ll.x, r.ll.y)
-                urx,ury = hit( r.ur.x, r.ur.y)
+            def transformRect(r):
+                llx, lly = hit(r.ll.x, r.ll.y)
+                urx, ury = hit(r.ur.x, r.ur.y)
 
                 # Make sure the rectangles are not empty
-                if llx > urx: urx,llx = llx,urx
-                if lly > ury: ury,lly = lly,ury
+                if llx > urx:
+                    urx, llx = llx, urx
+                if lly > ury:
+                    ury, lly = lly, ury
 
-                return [llx,lly,urx,ury]
+                return [llx, lly, urx, ury]
 
             r = block.rect
 
             # fake terminal for cell area
             dd = {}
-            dd['netName'] = block.nm
-            dd['layer'] = 'cellarea'
-            dd['gid'] = -1
-            dd['rect'] = transformRect( r)
+            dd["netName"] = block.nm
+            dd["layer"] = "cellarea"
+            dd["gid"] = -1
+            dd["rect"] = transformRect(r)
 
-            d['terminals'].append( dd)
+            d["terminals"].append(dd)
 
             for port in block.port_lst:
                 r = port.rect
 
                 formal = port.port_nm
-                actual = self.nl.pins[ (block.nm, formal)]
+                actual = self.nl.pins[(block.nm, formal)]
 
                 dd = {}
-                dd['netName'] = actual
-                dd['layer'] = translateLayer( port.layer)
-                dd['gid'] = -1
-                dd['rect'] = transformRect( r)
-               
-                d['terminals'].append( dd)
+                dd["netName"] = actual
+                dd["layer"] = translateLayer(port.layer)
+                dd["gid"] = -1
+                dd["rect"] = transformRect(r)
 
+                d["terminals"].append(dd)
 
         json.dump(d, fp, sort_keys=True, indent=4)
-        fp.write( '\n')
+        fp.write("\n")
 
-    def print( self):
-        print( self.blocks)
-        print( self.nl)
-        print( self.cs)
-        print( self.p)
+    def print(self):
+        print(self.blocks)
+        print(self.nl)
+        print(self.cs)
+        print(self.p)
 
 
 import argparse
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser( description="Reads results of Placement/Placer and generates a JSON file for the Viewer")
+    parser = argparse.ArgumentParser(
+        description="Reads results of Placement/Placer and generates a JSON file for the Viewer"
+    )
 
-    parser.add_argument( "-n", "--block_name", type=str, default="n3")
-    parser.add_argument( "-id", "--input_dir", type=str, default="../Placement/testcase")
-    parser.add_argument( "-od", "--output_dir", type=str, default="../Placement/testcase")
-    parser.add_argument( "-j", "--json_output_file", type=str, default="../Viewer/INPUT/mydesign_dr_globalrouting.json")
+    parser.add_argument("-n", "--block_name", type=str, default="n3")
+    parser.add_argument("-id", "--input_dir", type=str, default="../Placement/testcase")
+    parser.add_argument(
+        "-od", "--output_dir", type=str, default="../Placement/testcase"
+    )
+    parser.add_argument(
+        "-j",
+        "--json_output_file",
+        type=str,
+        default="../Viewer/INPUT/mydesign_dr_globalrouting.json",
+    )
 
     args = parser.parse_args()
 
     block_name = args.block_name
 
     design = Design()
-    design.parse( args.input_dir + '/' + block_name, args.output_dir + '/' + block_name)
+    design.parse(args.input_dir + "/" + block_name, args.output_dir + "/" + block_name)
 
-    with open( args.json_output_file, 'wt') as fp:
-        design.write_json_for_viewer( fp)
-    
+    with open(args.json_output_file, "wt") as fp:
+        design.write_json_for_viewer(fp)

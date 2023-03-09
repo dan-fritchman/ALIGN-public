@@ -7,27 +7,29 @@ import collections
 
 # Token specification
 pats = []
-pats.append( r'(?P<SEMI>;)')
-pats.append( r'(?P<NAME>[a-zA-Z_][a-zA-Z_0-9]*)')
-pats.append( r'(?P<NUM>[-+]?\d*\.\d+|[-+]?\d+\.?)')
-pats.append( r'(?P<LIT>\".*\")')
-pats.append( r'(?P<WS>\s+)')
+pats.append(r"(?P<SEMI>;)")
+pats.append(r"(?P<NAME>[a-zA-Z_][a-zA-Z_0-9]*)")
+pats.append(r"(?P<NUM>[-+]?\d*\.\d+|[-+]?\d+\.?)")
+pats.append(r"(?P<LIT>\".*\")")
+pats.append(r"(?P<WS>\s+)")
 
-master_pat = re.compile('|'.join(pats))
+master_pat = re.compile("|".join(pats))
 
 # Tokenizer
-Token = collections.namedtuple('Token', ['type','value'])
+Token = collections.namedtuple("Token", ["type", "value"])
+
 
 def generate_tokens(text):
     scanner = master_pat.scanner(text)
     for m in iter(scanner.match, None):
         tok = Token(m.lastgroup, m.group())
-        if tok.type != 'WS':
+        if tok.type != "WS":
             yield tok
 
-# Parser 
+
+# Parser
 class LEFParser:
-    '''
+    """
     Implementation of a recursive descent parser for LEF.   Each method
     implements a single grammar rule.
 
@@ -36,153 +38,161 @@ class LEFParser:
     lookahead token if it matches the argument.
     Use the ._expect() method to exactly match and discard the next token on
     the input (or raise a SyntaxError if it doesn't match).
-    '''
+    """
 
-    def parse(self,text):
+    def parse(self, text):
         self.tokens = generate_tokens(text)
-        self.tok = None             # Last symbol consumed
-        self.nexttok = None         # Next symbol tokenized
-        self._advance()             # Load first lookahead token
+        self.tok = None  # Last symbol consumed
+        self.nexttok = None  # Next symbol tokenized
+        self._advance()  # Load first lookahead token
         return self.whole()
 
     def _advance(self):
-        'Advance one token ahead'
+        "Advance one token ahead"
         self.tok, self.nexttok = self.nexttok, next(self.tokens, None)
-        print( self.tok, self.nexttok)
+        print(self.tok, self.nexttok)
 
-    def _accept(self,toktype):
-        'Test and consume the next token if it matches toktype'
+    def _accept(self, toktype):
+        "Test and consume the next token if it matches toktype"
         if self.nexttok and self.nexttok.type == toktype:
             self._advance()
             return True
         else:
             return False
 
-    def _accept_keyword(self,str):
-        'Test and consume the next token if it matches the keyword str'
-        if self.nexttok and self.nexttok.type == 'NAME' and self.nexttok.value == str:
+    def _accept_keyword(self, str):
+        "Test and consume the next token if it matches the keyword str"
+        if self.nexttok and self.nexttok.type == "NAME" and self.nexttok.value == str:
             self._advance()
             return True
         else:
             return False
 
-    def _expect(self,toktype):
-        'Consume next token if it matches toktype or raise SyntaxError'
+    def _expect(self, toktype):
+        "Consume next token if it matches toktype or raise SyntaxError"
         if not self._accept(toktype):
-            raise SyntaxError('Expected ' + toktype)
+            raise SyntaxError("Expected " + toktype)
 
-    def _expect_keyword(self,str):
-        'Consume next token if it matches argument or raise SyntaxError'
+    def _expect_keyword(self, str):
+        "Consume next token if it matches argument or raise SyntaxError"
         if not self._accept_keyword(str):
-            raise SyntaxError('Expected keyword' + str)
+            raise SyntaxError("Expected keyword" + str)
 
     # Grammar rules follow
 
     def whole(self):
 
         while True:
-            if self._accept_keyword('END'):
-                self._accept_keyword('LIBRARY')
+            if self._accept_keyword("END"):
+                self._accept_keyword("LIBRARY")
                 break
-            elif self._accept_keyword( 'VERSION'): 
-                self._expect('NUM')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'BUSBITCHARS'):
-                self._expect('LIT')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'DIVIDERCHAR'):
-                self._expect('LIT')
-                self._expect('SEMI')
-            elif self._accept_keyword( 'PROPERTYDEFINITIONS'):
+            elif self._accept_keyword("VERSION"):
+                self._expect("NUM")
+                self._expect("SEMI")
+            elif self._accept_keyword("BUSBITCHARS"):
+                self._expect("LIT")
+                self._expect("SEMI")
+            elif self._accept_keyword("DIVIDERCHAR"):
+                self._expect("LIT")
+                self._expect("SEMI")
+            elif self._accept_keyword("PROPERTYDEFINITIONS"):
                 while True:
-                    if self._accept_keyword('END'):
-                        self._accept_keyword('PROPERTYDEFINITIONS')
+                    if self._accept_keyword("END"):
+                        self._accept_keyword("PROPERTYDEFINITIONS")
                         break
-                    elif self._accept_keyword( 'MACRO'):
-                        self._expect('NAME')
-                        self._expect('NAME')
-                        self._expect('SEMI')
+                    elif self._accept_keyword("MACRO"):
+                        self._expect("NAME")
+                        self._expect("NAME")
+                        self._expect("SEMI")
                     else:
-                        raise SyntaxError('Expected END or MACRO keywords')
-            elif self._accept_keyword( 'MACRO'):
-                self._expect('NAME')
-                macroName = self.tok.value 
+                        raise SyntaxError("Expected END or MACRO keywords")
+            elif self._accept_keyword("MACRO"):
+                self._expect("NAME")
+                macroName = self.tok.value
                 while True:
-                    if self._accept_keyword( 'END'):
+                    if self._accept_keyword("END"):
                         self._expect_keyword(macroName)
                         break
-                    elif self._accept_keyword( 'ORIGIN'):
-                        self._expect('NUM')
-                        self._expect('NUM')
-                        self._expect('SEMI')
-                    elif self._accept_keyword( 'FOREIGN'):
-                        self._expect('NAME')
-                        self._expect('NUM')
-                        self._expect('NUM')
-                        self._expect('SEMI')
-                    elif self._accept_keyword( 'SIZE'):
-                        self._expect('NUM')
-                        self._expect_keyword('BY')
-                        self._expect('NUM')
-                        self._expect('SEMI')
-                    elif self._accept_keyword( 'PIN'):
-                        self._expect('NAME')
+                    elif self._accept_keyword("ORIGIN"):
+                        self._expect("NUM")
+                        self._expect("NUM")
+                        self._expect("SEMI")
+                    elif self._accept_keyword("FOREIGN"):
+                        self._expect("NAME")
+                        self._expect("NUM")
+                        self._expect("NUM")
+                        self._expect("SEMI")
+                    elif self._accept_keyword("SIZE"):
+                        self._expect("NUM")
+                        self._expect_keyword("BY")
+                        self._expect("NUM")
+                        self._expect("SEMI")
+                    elif self._accept_keyword("PIN"):
+                        self._expect("NAME")
                         pinName = self.tok.value
                         while True:
-                            if self._accept_keyword( 'END'):
+                            if self._accept_keyword("END"):
                                 self._expect_keyword(pinName)
                                 break
-                            elif self._accept_keyword( 'DIRECTION'):
-                                self._expect('NAME')
-                                self._expect('SEMI')    
-                            elif self._accept_keyword( 'USE'):
-                                self._expect('NAME')
-                                self._expect('SEMI')    
-                            elif self._accept_keyword( 'PORT'):
+                            elif self._accept_keyword("DIRECTION"):
+                                self._expect("NAME")
+                                self._expect("SEMI")
+                            elif self._accept_keyword("USE"):
+                                self._expect("NAME")
+                                self._expect("SEMI")
+                            elif self._accept_keyword("PORT"):
                                 while True:
-                                    if self._accept_keyword( 'END'):
+                                    if self._accept_keyword("END"):
                                         break
-                                    elif self._accept_keyword( 'LAYER'):
-                                        self._expect('NAME')
-                                        self._expect('SEMI')    
-                                    elif self._accept_keyword( 'RECT'):
-                                        self._expect('NUM')
-                                        self._expect('NUM')
-                                        self._expect('NUM')
-                                        self._expect('NUM')
-                                        self._expect('SEMI')    
+                                    elif self._accept_keyword("LAYER"):
+                                        self._expect("NAME")
+                                        self._expect("SEMI")
+                                    elif self._accept_keyword("RECT"):
+                                        self._expect("NUM")
+                                        self._expect("NUM")
+                                        self._expect("NUM")
+                                        self._expect("NUM")
+                                        self._expect("SEMI")
                                     else:
-                                        raise SyntaxError('Expected END, LAYER, or RECT keywords.')     
+                                        raise SyntaxError(
+                                            "Expected END, LAYER, or RECT keywords."
+                                        )
                             else:
-                                raise SyntaxError('Expected END, DIRECTION, USE, or PORT keywords.')     
+                                raise SyntaxError(
+                                    "Expected END, DIRECTION, USE, or PORT keywords."
+                                )
 
-                                        
-                    elif self._accept_keyword( 'OBS'):
+                    elif self._accept_keyword("OBS"):
                         while True:
-                            if self._accept_keyword( 'END'):
+                            if self._accept_keyword("END"):
                                 break
-                            elif self._accept_keyword( 'LAYER'):
-                                self._expect('NAME')
-                                self._expect('SEMI')    
-                            elif self._accept_keyword( 'RECT'):
-                                self._expect('NUM')
-                                self._expect('NUM')
-                                self._expect('NUM')
-                                self._expect('NUM')
-                                self._expect('SEMI')    
+                            elif self._accept_keyword("LAYER"):
+                                self._expect("NAME")
+                                self._expect("SEMI")
+                            elif self._accept_keyword("RECT"):
+                                self._expect("NUM")
+                                self._expect("NUM")
+                                self._expect("NUM")
+                                self._expect("NUM")
+                                self._expect("SEMI")
                             else:
-                                raise SyntaxError('Expected END, LAYER, or RECT keywords.')     
-                    elif self._accept_keyword( 'PROPERTY'):
-                        self._expect('NAME')
-                        if self._accept( 'LIT') or self._accept( 'NUM'):
-                            self._expect('SEMI')                                
+                                raise SyntaxError(
+                                    "Expected END, LAYER, or RECT keywords."
+                                )
+                    elif self._accept_keyword("PROPERTY"):
+                        self._expect("NAME")
+                        if self._accept("LIT") or self._accept("NUM"):
+                            self._expect("SEMI")
                         else:
-                            raise SyntaxError('Expected LIT or NUM tokens')
+                            raise SyntaxError("Expected LIT or NUM tokens")
                     else:
-                        self._expect('NAME')
+                        self._expect("NAME")
 
             else:
-                raise SyntaxError( 'Expected END, VERSION, BUSBITCHARS, DIVIDERCHAR, PROPERTYDEFINITIONS or MACRO')
+                raise SyntaxError(
+                    "Expected END, VERSION, BUSBITCHARS, DIVIDERCHAR, PROPERTYDEFINITIONS or MACRO"
+                )
+
 
 def test_lef():
     str = """VERSION 5.7 ;
@@ -235,5 +245,4 @@ END current_mirror_nmos
 END LIBRARY
 """
     lp = LEFParser()
-    lp.parse( str)
-
+    lp.parse(str)
