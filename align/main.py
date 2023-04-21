@@ -6,6 +6,9 @@ import sys
 import http.server
 import socketserver
 import functools
+from pathlib import Path 
+from typing import Optional, Union, Any, Tuple
+from pydantic.dataclasses import dataclass
 
 from .compiler import generate_hierarchy
 from align.schema.library import read_lib_json
@@ -119,6 +122,45 @@ def start_viewer(working_dir, pnr_dir, variant):
     sys.stderr = stderr
 
 
+
+@dataclass
+class SchematicToLayout:
+    """ # `schematic2layout` Compilation Input """
+
+    netlist_dir: Path
+    pdk_dir: Path
+    netlist_file: Path = None
+    subckt: Optional[str] = None
+    working_dir: Optional[Path] = None
+    flatten: bool = False
+    nvariants: int = 1
+    effort: Union[int, float] = 0  # FIXME: int or float?
+    extract: bool = False
+    log_level: Any = None  # FIXME: type
+    verbosity: Any = None  # FIXME: type
+    generate: bool = False
+    regression: bool = False
+    uniform_height: bool = False
+    PDN_mode: bool = False
+    flow_start: Any = None  # FIXME: type
+    flow_stop: Any = None  # FIXME: type
+    router_mode: Any = "top_down"  # FIXME: type
+    gui: bool = False
+    skipGDS: bool = False
+    lambda_coeff: float = 1.0
+    nroutings: int = 1
+    viewer: bool = False
+    select_in_ILP: bool = False
+    place_using_ILP: bool = False
+    seed: int = 0
+    use_analytical_placer: bool = False
+    ilp_solver: Any = "symphony"  # FIXME: type
+    placer_sa_iterations: int = 10000
+    placer_ilp_runtime: int = 1
+    placer: Any = None  # FIXME: type
+
+
+
 def schematic2layout(netlist_dir, pdk_dir, netlist_file=None, subckt=None, working_dir=None, flatten=False, nvariants=1, effort=0, extract=False,
                      log_level=None, verbosity=None, generate=False, regression=False, uniform_height=False, PDN_mode=False, flow_start=None,
                      flow_stop=None, router_mode='top_down', gui=False, skipGDS=False, lambda_coeff=1.0,
@@ -148,24 +190,37 @@ def schematic2layout(netlist_dir, pdk_dir, netlist_file=None, subckt=None, worki
         regression_dir.mkdir(exist_ok=True)
 
     results = []
-    # Generate hierarchy
-    topology_dir = working_dir / '1_topology'
-    if '1_topology' in steps_to_run:
-        netlist = extract_netlist_files(netlist_dir, netlist_file)
-        if subckt is None:
-            subckt = netlist.stem.upper()
+    def the_topology_step(subckt: Optional[str]) -> Tuple[Path, "Library", str]:
+        """ # Run the `1_topology` step. 
+
+        This is a closure just to start sorting out what goes where! 
+        Preferably it would stand alone. 
+
+        Primarily produces the `primitive_lib` Library. 
+        Also returns its own run-directory, which later stages need. 
+        `subckt` would ideally me modified from the calling environment, 
+        but needs to be passed and returned due to closure rules. """
+        # Generate hierarchy
+        topology_dir = working_dir / '1_topology'
+        if '1_topology' in steps_to_run:
+            netlist = extract_netlist_files(netlist_dir, netlist_file)
+            if subckt is None:
+                subckt = netlist.stem.upper()
+            else:
+                subckt = subckt.upper()
+
+            logger.info(f"Reading netlist: {netlist} subckt={subckt}, flat={flatten}")
+
+            shutil.rmtree(topology_dir, ignore_errors=True)
+            topology_dir.mkdir(exist_ok=True)
+            primitive_lib = generate_hierarchy(netlist, subckt, topology_dir, flatten, pdk_dir)
         else:
-            subckt = subckt.upper()
-
-        logger.info(f"Reading netlist: {netlist} subckt={subckt}, flat={flatten}")
-
-        shutil.rmtree(topology_dir, ignore_errors=True)
-        topology_dir.mkdir(exist_ok=True)
-        primitive_lib = generate_hierarchy(netlist, subckt, topology_dir, flatten, pdk_dir)
-    else:
-        if subckt is None:
-            subckt = extract_netlist_files(netlist_dir, netlist_file).stem
-        primitive_lib = read_lib_json(topology_dir / '__primitives_library__.json')
+            if subckt is None:
+                subckt = extract_netlist_files(netlist_dir, netlist_file).stem
+            primitive_lib = read_lib_json(topology_dir / '__primitives_library__.json')
+        return topology_dir, primitive_lib, subckt
+    
+    topology_dir, primitive_lib, subckt = the_topology_step(subckt)
 
     # Generate primitives
     primitive_dir = (working_dir / '2_primitives')

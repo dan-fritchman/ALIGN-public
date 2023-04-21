@@ -1,4 +1,5 @@
 import json
+from pathlib import Path 
 from .model import Model
 from .subcircuit import SubCircuit
 from .types import List, Union, set_context
@@ -96,7 +97,9 @@ class Library(List[Union[Model, SubCircuit]]):
         return models
 
 
-def read_lib_json(json_file_path):
+def read_lib_json(json_file_path: Path) -> Library:
+    """# Read a `Library` from a JSON-formatted file. """
+    
     with open(json_file_path, "r") as f:
         data = json.load(f)
     library = Library(loadbuiltins=False)

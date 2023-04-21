@@ -25,7 +25,7 @@ class CreateDatabase:
         self.remove_redundant_models()
         self.add_user_const()
 
-    def read_inputs(self, name: str):
+    def read_inputs(self, name: str) -> "Library":
         """
         Add user constraints to the design
         """
